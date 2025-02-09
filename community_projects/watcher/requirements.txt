@@ -1,0 +1,5 @@
+screeninfo
+loguru
+gtts
+playsound
+setproctitle
