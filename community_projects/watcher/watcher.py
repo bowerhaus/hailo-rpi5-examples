@@ -18,6 +18,7 @@ import datetime
 import math
 import json
 from logger_config import logger
+from gstreamer_watcher_app import GStreamerWatcherApp
 
 # Load configuration from config.json
 with open('config.json', 'r') as config_file:
@@ -448,5 +449,5 @@ if __name__ == "__main__":
     tts.save(HELLO) 
     playsound(HELLO, 0)
     user_data = user_app_callback_class()
-    app = GStreamerDetectionApp(app_callback, user_data)
+    app = GStreamerWatcherApp(app_callback, user_data)
     app.run()
