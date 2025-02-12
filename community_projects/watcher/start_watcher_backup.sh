@@ -10,6 +10,6 @@ then
     echo "Hailo process is already running."
 else
     echo "No Hailo process found. Starting the Python program."
-    python watcher.py --input rpi  > ~/watcher.log 2>&1 &
+    python watcher.py --use-fram --input rpi  > ~/watcher.log 2>&1 &
 fi
 
