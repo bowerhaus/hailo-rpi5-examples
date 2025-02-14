@@ -3,6 +3,8 @@ import os
 import datetime
 import re
 import json
+import subprocess  # Import the subprocess module
+import tempfile  # Import the tempfile module
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -88,11 +90,64 @@ def delete_files(base_filename):
 def serve_media(filename):
     today = datetime.datetime.now().strftime("%Y%m%d")
     directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
+    filepath = os.path.join(directory, filename)
+
     if filename.endswith('.jpg'):
         return send_from_directory(directory, filename)
     elif filename.endswith('.json'):
         return send_from_directory(directory, filename)
+    elif filename.endswith('.mp4'):
+        # Check if the file exists
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'File not found'}), 404
+
+        # Check if the video is already H264
+        try:
+            result = subprocess.run([
+                'ffprobe',
+                '-v', 'error',
+                '-select_streams', 'v:0',
+                '-show_entries', 'stream=codec_name',
+                '-of', 'default=nokey=1:noprint_wrappers=1',
+                filepath
+            ], capture_output=True, text=True, check=True)
+            codec_name = result.stdout.strip()
+
+            if codec_name == 'h264':
+                print(f"Video {filename} is already H264.")
+                return send_from_directory(directory, filename)
+            else:
+                print(f"Video {filename} is not H264, converting...")
+                try:
+                    # Create a temporary file in the same directory
+                    with tempfile.NamedTemporaryFile(suffix=".mp4", dir=directory, delete=False) as tmpfile:
+                        temp_filepath = tmpfile.name
+
+                    subprocess.run([
+                        'ffmpeg',
+                        '-y',  # Add -y to overwrite existing files
+                        '-i', filepath,
+                        '-codec:v', 'libx264',  # Use H264 codec
+                        '-preset', 'fast',  # Use a fast preset
+                        '-movflags', 'faststart',  # Optimize for streaming
+                        temp_filepath  # Output to temporary file
+                    ], check=True)
+
+                    # Replace the original file with the temporary file
+                    os.replace(temp_filepath, filepath)
+                    print(f"Video {filename} successfully converted to H264 and overwritten.")
+                    return send_from_directory(directory, filename)
+                except subprocess.CalledProcessError as e:
+                    print(f"Video conversion failed: {e}")
+                    return jsonify({'error': 'Video conversion failed'}), 500
+                finally:
+                    # Ensure the temporary file is deleted if conversion fails
+                    if os.path.exists(temp_filepath):
+                        os.remove(temp_filepath)
+
+        except subprocess.CalledProcessError as e:
+            print(f"ffprobe failed: {e}")
+            return jsonify({'error': 'ffprobe failed'}), 500
     return '', 404
 
 @app.route('/')
