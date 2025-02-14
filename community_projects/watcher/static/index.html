@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detection Events</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
 </head>
 <body>
     <div class="split-container">
@@ -17,7 +18,12 @@
         <div class="splitter" id="splitter"></div>
         <div class="image-viewer">
             <div class="image-container">
-                <img id="currentImage" class="current-image">
+                <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
+                    <p class="vjs-no-js">
+                      To view this video please enable JavaScript, and consider upgrading to a web browser that
+                      <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                    </p>
+                </video>
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
@@ -198,16 +204,13 @@
             // Clear JSON viewer
             document.getElementById('jsonViewer').innerHTML = '';
             
-            // Clear image and stop interval
-            if (imageInterval) {
-                clearInterval(imageInterval);
-                imageInterval = null;
-            }
-            document.getElementById('currentImage').src = '';
-            document.getElementById('timeIndicator').textContent = '';
+            // Clear video and stop interval
+            const videoPlayer = videojs('videoPlayer');
+            videoPlayer.pause();
+            videoPlayer.src("");
+            videoPlayer.load();
             
-            currentImages = [];
-            currentIndex = 0;
+            document.getElementById('timeIndicator').textContent = '';
         }
 
         function formatJsonValue(value, indent) {
@@ -250,38 +253,31 @@
             element.classList.add('selected');
             
             // Load and display JSON content (skip if replaying)
-            if (!isReplay) {
-                fetch(`/media/${filename}`)
-                    .then(response => response.json())
-                    .then(json => displayJson(json));
-            }
+            fetch(`/media/${filename}`)
+                .then(response => response.json())
+                .then(json => displayJson(json));
             
             const baseFilename = filename.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
             
-            if (imageInterval) {
-                clearInterval(imageInterval);
-                imageInterval = null;
-            }
+            const videoPlayer = videojs('videoPlayer');
+            videoPlayer.pause();
+            videoPlayer.src({
+                src: videoFilename,
+                type: 'video/mp4'
+            });
+            videoPlayer.load();
 
-            fetch(`/api/images/${baseFilename}`)
-                .then(response => response.json())
-                .then(images => {
-                    currentImages = images;
-                    currentIndex = 0;
-                    showCurrentImage();
-                    
-                    // Start new interval for cycling images
-                    imageInterval = setInterval(() => {
-                        currentIndex++;
-                        if (currentIndex >= currentImages.length) {
-                            // Stop at end of sequence
-                            clearInterval(imageInterval);
-                            imageInterval = null;
-                            return;
-                        }
-                        showCurrentImage();
-                    }, 1000); // Show one image per second
-                });
+            // Check if video can play
+            videoPlayer.on('canplay', function() {
+                videoPlayer.play();
+            });
+
+            // Handle error if video cannot be loaded
+            videoPlayer.on('error', function(e) {
+                console.error('Video error:', videoPlayer.error());
+                alert('Could not load video: ' + videoFilename);
+            });
         }
 
         function showCurrentImage() {
