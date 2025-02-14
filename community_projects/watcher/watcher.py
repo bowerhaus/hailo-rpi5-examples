@@ -113,9 +113,6 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
-        self.last_image_save_time = 0
-        self.image_sequence_count = 0
-
     def on_eos(self):
         if self.is_active_tracking:
             self.stop_active_tracking()
@@ -181,9 +178,6 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(DOG_ALERT, 0)
 
-        self.last_image_save_time = 0
-        self.image_sequence_count = 0
-
     def active_tracking(self, class_detections):
         # If a frame is available, write the frame to the video
         if self.current_frame is not None:
@@ -201,17 +195,6 @@ class user_app_callback_class(app_callback_class):
             if detection_instance_count > self.max_instances:
                 self.max_instances = detection_instance_count
                 self.save_frame = self.current_frame
-
-            # Save periodic images
-            current_time = time()
-            if current_time - self.last_image_save_time >= 2:  # Every 2 seconds
-                if self.current_frame is not None:
-                    date_subdir = datetime.datetime.now().strftime("%Y%m%d")
-                    output_dir = f"{OUTPUT_DIRECTORY}/{date_subdir}"
-                    image_filename = f"{output_dir}/{self.active_timestamp}_{CLASS_TO_TRACK}[{self.image_sequence_count}].jpg"
-                    cv2.imwrite(image_filename, self.current_frame)
-                    self.image_sequence_count += 1
-                    self.last_image_save_time = current_time
 
         # Update moving average of velocity
         if self.object_centroid is not None and self.previous_centroid is not None:
