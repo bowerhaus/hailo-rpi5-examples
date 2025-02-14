@@ -159,9 +159,11 @@
                                     item.classList.add('helen-out');
                                 } else if (json && json.label === 'HELEN_BACK') {
                                     item.classList.add('helen-back');
+                                } else if (json && json.reviewed === true) {
+                                    // Only add reviewed class if no helen-specific class exists
+                                    item.classList.add('reviewed');
                                 }
                                 
-                                // Only add selected class if there is a current selection
                                 if (file === currentSelection) {
                                     item.classList.add('selected');
                                 }
@@ -170,7 +172,7 @@
                                 item.textContent = file.replace('.json', '');
                                 item.setAttribute('data-filename', file);
                                 item.onclick = (e) => {
-                                    e.stopPropagation(); // Prevent click from bubbling to list
+                                    e.stopPropagation();
                                     selectEvent(file, item);
                                 };
                                 list.appendChild(item);
@@ -293,13 +295,15 @@
             if (!item) return;
 
             // Remove any existing helen-out/helen-back classes
-            item.classList.remove('helen-out', 'helen-back');
+            item.classList.remove('helen-out', 'helen-back', 'reviewed');
             
             // Add appropriate class based on new label
             if (json.label === 'HELEN_OUT') {
                 item.classList.add('helen-out');
             } else if (json.label === 'HELEN_BACK') {
                 item.classList.add('helen-back');
+            } else if (json.reviewed === true) {
+                item.classList.add('reviewed');
             }
         }
 
@@ -314,6 +318,9 @@
                 currentJson.named_direction = newDirection; // 'OUT', 'BACK', or 'OTHER'
                 currentJson.label = null;
             }
+            
+            // Mark as reviewed when direction is updated
+            currentJson.reviewed = true;
 
             // Update display
             displayJson(currentJson);
