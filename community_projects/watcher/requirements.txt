@@ -3,3 +3,4 @@ loguru
 gtts
 playsound
 setproctitle
+flask

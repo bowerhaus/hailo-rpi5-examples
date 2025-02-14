@@ -20,6 +20,10 @@ import json
 from logger_config import logger
 from gstreamer_watcher_app import GStreamerWatcherApp
 
+import threading
+from web_server import app as web_app
+from time import sleep, time
+
 # Load configuration from config.json
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
@@ -36,8 +40,6 @@ SAVE_DETECTION_VIDEO = config.get('SAVE_DETECTION_VIDEO', True)
 FRAME_RATE = config.get('FRAME_RATE', 30)
 HELEN_DOGS_THRESHOLD = config.get('HELEN_DOGS_THRESHOLD', 2)
 OUTPUT_DIRECTORY = config.get('OUTPUT_DIRECTORY', 'output')
-FANSHIM_START_THRESHOLD = config.get('FANSHIM_START_THRESHOLD', None)
-FANSHIM_HYSTERESIS = config.get('FANSHIM_HYSTERESIS', None) 
 
 DOG_ALERT = "dogalert.mp3"
 HELEN_OUT_ALERT = "helenout.mp3"
@@ -111,6 +113,9 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
+        self.last_image_save_time = 0
+        self.image_sequence_count = 0
+
     def on_eos(self):
         if self.is_active_tracking:
             self.stop_active_tracking()
@@ -176,6 +181,9 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(DOG_ALERT, 0)
 
+        self.last_image_save_time = 0
+        self.image_sequence_count = 0
+
     def active_tracking(self, class_detections):
         # If a frame is available, write the frame to the video
         if self.current_frame is not None:
@@ -202,6 +210,17 @@ class user_app_callback_class(app_callback_class):
                 (self.avg_velocity.y * (self.active_detection_count - 1) + delta.y) / self.active_detection_count
             )
         self.previous_centroid = self.object_centroid
+
+        # Save periodic images
+        current_time = time()
+        if current_time - self.last_image_save_time >= 3.0:  # Every 3 seconds
+            if self.current_frame is not None:
+                date_subdir = datetime.datetime.now().strftime("%Y%m%d")
+                output_dir = f"{OUTPUT_DIRECTORY}/{date_subdir}"
+                image_filename = f"{output_dir}/{self.active_timestamp}_{CLASS_TO_TRACK}[{self.image_sequence_count}].jpg"
+                cv2.imwrite(image_filename, self.current_frame)
+                self.image_sequence_count += 1
+                self.last_image_save_time = current_time
 
     def stop_active_tracking(self):
         
@@ -414,40 +433,23 @@ def app_callback(pad, info, user_data):
     if user_data.is_active_tracking:
         user_data.active_tracking(class_detections)
 
-    # Monitor CPU temperature and control the fan
-    if FANSHIM_START_THRESHOLD is not None:
-        cpu_temp = get_cpu_temperature()
-
-        from fanshim import FanShim
-        if cpu_temp > FANSHIM_START_THRESHOLD:
-            FanShim().set_fan(True)
-        elif cpu_temp < (FANSHIM_START_THRESHOLD - FANSHIM_HYSTERESIS):
-            FanShim().set_fan(False)
-
     return Gst.PadProbeReturn.OK
 
-def get_cpu_temperature():
-    """
-    Get the current CPU temperature.
-    Returns:
-        float: The CPU temperature in degrees Celsius.
-    """
-    with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-        temp_str = f.read().strip()
-    return float(temp_str) / 1000.0
-
-class GStreamerApp:
-    def __init__(self, args, user_data: app_callback_class):
-        # ...existing code...
-        self.user_data = user_data
-        # ...existing code...
-
 if __name__ == "__main__":
-
     # Create an instance of the user app callback class
     tts = gtts.gTTS(f"Hello Helen Oh Matic")
     tts.save(HELLO) 
     playsound(HELLO, 0)
+    
+    # Start web server first
+    web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
+    web_server_thread.daemon = True
+    web_server_thread.start()
+    
+    # Give web server time to initialize
+    sleep(1)
+    
+    # Start watcher app
     user_data = user_app_callback_class()
     app = GStreamerWatcherApp(app_callback, user_data)
     app.run()
