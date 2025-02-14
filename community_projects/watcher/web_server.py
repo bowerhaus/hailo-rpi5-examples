@@ -69,6 +69,21 @@ def update_json(filename):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/delete/<base_filename>', methods=['DELETE'])
+def delete_files(base_filename):
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    
+    if not os.path.exists(directory):
+        return jsonify({'error': 'Directory not found'}), 404
+
+    # Find and delete all files with the same base filename
+    files_to_delete = [f for f in os.listdir(directory) if f.startswith(base_filename)]
+    for file in files_to_delete:
+        os.remove(os.path.join(directory, file))
+    
+    return jsonify({'success': True, 'deleted_files': files_to_delete})
+
 @app.route('/media/<filename>')
 def serve_media(filename):
     today = datetime.datetime.now().strftime("%Y%m%d")
