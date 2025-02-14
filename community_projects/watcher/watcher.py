@@ -5,6 +5,7 @@ import os
 import numpy as np
 import cv2
 import hailo
+import subprocess  # Add this import
 from hailo_apps_infra.hailo_rpi_common import (
     get_caps_from_pad,
     get_numpy_from_buffer,
@@ -118,9 +119,9 @@ class user_app_callback_class(app_callback_class):
             self.stop_active_tracking()
 
     def start_video_recording(self, width, height, video_filename, format, fps):
-        self.video_filename = video_filename
+        self.video_filename = video_filename.replace('.mp4', '.m4v')  # Use .m4v extension initially
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
-        self.video_writer = cv2.VideoWriter(video_filename, fourcc, fps, (width, height))
+        self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
 
     def write_video_frame(self, frame):
         if self.video_writer is not None and self.current_frame is not None:
@@ -157,6 +158,7 @@ class user_app_callback_class(app_callback_class):
         self.is_active_tracking = True
         self.max_instances = len(class_detections)
         self.start_centroid = self.object_centroid
+        
         self.save_frame = self.current_frame
         self.active_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
 
@@ -179,10 +181,6 @@ class user_app_callback_class(app_callback_class):
         playsound(DOG_ALERT, 0)
 
     def active_tracking(self, class_detections):
-        # If a frame is available, write the frame to the video
-        if self.current_frame is not None:
-            self.write_video_frame(self.current_frame)
-
         # Update total detection instances and active detection count for later averaging
         detection_instance_count = len(class_detections)
         if detection_instance_count > 0:
@@ -196,6 +194,10 @@ class user_app_callback_class(app_callback_class):
                 self.max_instances = detection_instance_count
                 self.save_frame = self.current_frame
 
+        # If a frame is available, write the frame to the video
+        if self.current_frame is not None:
+            self.write_video_frame(self.current_frame)
+
         # Update moving average of velocity
         if self.object_centroid is not None and self.previous_centroid is not None:
             delta = self.object_centroid.subtract(self.previous_centroid)
@@ -205,8 +207,34 @@ class user_app_callback_class(app_callback_class):
             )
         self.previous_centroid = self.object_centroid
 
+    def convert_video_to_h264(self, video_path):
+        """Convert video to H264 format using ffmpeg"""
+        try:
+            temp_path = video_path + ".temp.mp4"
+            final_path = video_path.replace('.m4v', '.mp4')  # Final path with .mp4 extension
+            
+            subprocess.run([
+                'ffmpeg',
+                '-y',  # Overwrite output file if it exists
+                '-i', video_path,  # Input is .m4v
+                '-codec:v', 'libx264',  # Use H264 codec
+                '-preset', 'fast',  # Use fast preset for speed
+                '-movflags', 'faststart',  # Optimize for web playback
+                temp_path
+            ], check=True, capture_output=True)
+            
+            # Replace original .m4v file with converted .mp4 file
+            os.replace(temp_path, final_path)
+            # Remove the original .m4v file
+            os.remove(video_path)
+            logger.info(f"Successfully converted {video_path} to H264 and saved as {final_path}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to convert video {video_path} to H264: {e}")
+            # Clean up temp file if it exists
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
     def stop_active_tracking(self):
-        
         self.is_active_tracking = False
         self.end_centroid = self.object_centroid
 
@@ -227,8 +255,15 @@ class user_app_callback_class(app_callback_class):
         os.makedirs(output_dir, exist_ok=True)
 
         # Stop any video recording and rename the file to include the average count
-        final_video_filename = f"{output_dir}/{root_filename}.mp4"
+        final_video_filename = f"{output_dir}/{root_filename}.m4v"  # Use .m4v extension
         self.stop_video_recording(final_video_filename)
+
+        # Convert video to H264 in background thread - will rename to .mp4
+        threading.Thread(
+            target=self.convert_video_to_h264,
+            args=(final_video_filename,),
+            daemon=True
+        ).start()
 
         # Save the frame with the most instances if SAVE_DETECTION_IMAGES is True
         if self.save_frame is not None and SAVE_DETECTION_IMAGES:

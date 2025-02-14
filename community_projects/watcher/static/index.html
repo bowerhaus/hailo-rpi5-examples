@@ -18,9 +18,6 @@
         <div class="splitter" id="splitter"></div>
         <div class="image-viewer">
             <div class="image-container">
-                <div id="loadingOverlay" class="loading-overlay">
-                    <div class="loading-message">HANG ON</div>
-                </div>
                 <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
                     <p class="vjs-no-js">
                       To view this video please enable JavaScript, and consider upgrading to a web browser that
@@ -247,20 +244,12 @@
         }
 
         function selectEvent(filename, element) {
-            // Show loading overlay immediately
-            document.getElementById('loadingOverlay').style.display = 'flex';
-
-            let loadingTimeout;
-
-            // If selecting the same item again, just replay the sequence
-            const isReplay = filename === selectedItem;
-            
             selectedItem = filename;
             document.querySelectorAll('.event-item').forEach(item => 
                 item.classList.remove('selected'));
             element.classList.add('selected');
             
-            // Load and display JSON content (skip if replaying)
+            // Load and display JSON content
             fetch(`/media/${filename}`)
                 .then(response => response.json())
                 .then(json => displayJson(json));
@@ -278,19 +267,12 @@
 
             // Check if video can play
             videoPlayer.on('canplay', function() {
-                // Hide loading overlay when video can play
-                clearTimeout(loadingTimeout);
-                document.getElementById('loadingOverlay').style.display = 'none';
                 videoPlayer.play();
             });
 
             // Handle error if video cannot be loaded
             videoPlayer.on('error', function(e) {
                 console.error('Video error:', videoPlayer.error());
-                alert('Could not load video: ' + videoFilename);
-                // Hide loading overlay on error
-                clearTimeout(loadingTimeout);
-                document.getElementById('loadingOverlay').style.display = 'none';
             });
         }
 
