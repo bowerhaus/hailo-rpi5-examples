@@ -10,6 +10,7 @@
     <div class="split-container">
         <div class="left-panel">
             <div class="metadata-list" id="metadataList"></div>
+            <button class="refresh-button" onclick="updateMetadataList()">Refresh</button>
             <div class="vertical-splitter" id="verticalSplitter"></div>
             <div class="json-viewer" id="jsonViewer"></div>
         </div>
@@ -165,9 +166,8 @@
                                     item.classList.add('selected');
                                 }
                                 
-                                // Show only the timestamp part of the filename
-                                const displayName = file.split('_')[0] + '_' + file.split('_')[1];
-                                item.textContent = displayName;
+                                // Show the filename without .json extension
+                                item.textContent = file.replace('.json', '');
                                 item.setAttribute('data-filename', file);
                                 item.onclick = (e) => {
                                     e.stopPropagation(); // Prevent click from bubbling to list
@@ -288,6 +288,21 @@
             }
         }
 
+        function updateSingleListItem(filename, json) {
+            const item = document.querySelector(`[data-filename="${filename}"]`);
+            if (!item) return;
+
+            // Remove any existing helen-out/helen-back classes
+            item.classList.remove('helen-out', 'helen-back');
+            
+            // Add appropriate class based on new label
+            if (json.label === 'HELEN_OUT') {
+                item.classList.add('helen-out');
+            } else if (json.label === 'HELEN_BACK') {
+                item.classList.add('helen-back');
+            }
+        }
+
         function updateDirection(newDirection) {
             if (!selectedItem || !currentJson) return;
 
@@ -302,6 +317,7 @@
 
             // Update display
             displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
 
             // Send updated JSON to server
             fetch(`/api/update/${selectedItem}`, {
@@ -324,7 +340,7 @@
         selectedItem = null;
         currentJson = null;
         updateMetadataList();
-        setInterval(updateMetadataList, 5000);
+        setInterval(updateMetadataList, 30000);
     </script>
 </body>
 </html>
