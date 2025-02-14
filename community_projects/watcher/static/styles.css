@@ -249,3 +249,24 @@ body {
 .delete-button:hover {
     background: #5a6268;
 }
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none; /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    z-index: 10;
+}
+
+.loading-message {
+    padding: 20px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.7);
+}
