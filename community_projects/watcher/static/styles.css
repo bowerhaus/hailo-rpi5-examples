@@ -166,6 +166,22 @@ body {
     color: white;
 }
 
+.event-item.reviewed {
+    color: #0066cc;
+    font-weight: bold;
+}
+
+.event-item.reviewed.selected {
+    background-color: #0066cc;
+    color: white;
+}
+
+/* Make sure reviewed class doesn't override helen classes */
+.event-item.helen-out,
+.event-item.helen-back {
+    /* These styles will take precedence over .reviewed */
+}
+
 .current-image {
     max-width: 100%;
     max-height: 100%;

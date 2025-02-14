@@ -262,7 +262,8 @@ class user_app_callback_class(app_callback_class):
             "average_instances": avg_detection_count,
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
-            "label": estimated_label
+            "label": estimated_label,
+            "reviewed": False  # Add reviewed field, initially false
         }
 
         # Save metadata as JSON file
