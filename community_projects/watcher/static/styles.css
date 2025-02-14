@@ -94,9 +94,17 @@ body {
 .button-container {
     padding: 10px;
     display: flex;
-    justify-content: center;
-    gap: 10px;
+    justify-content: space-between; /* Keep space-between */
+    align-items: center; /* Vertically center items */
     background: #1a1a1a;
+}
+
+.direction-buttons-group {
+    display: flex;
+    justify-content: center; /* Center the group horizontally */
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1; /* Allow the group to take up remaining space */
 }
 
 .direction-button {
@@ -219,4 +227,19 @@ body {
 
 .refresh-button:hover {
     background: #e67e00;
+}
+
+.delete-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #6c757d;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+    background: #5a6268;
 }

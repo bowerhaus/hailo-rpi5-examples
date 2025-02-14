@@ -21,11 +21,14 @@
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
-                <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
-                <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
-                <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
-                <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
-                <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                <div class="direction-buttons-group">
+                    <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
+                    <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
+                    <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                </div>
+                <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
         </div>
     </div>
@@ -339,6 +342,22 @@
                 console.log('JSON updated successfully');
             })
             .catch(error => console.error('Error updating JSON:', error));
+        }
+
+        function deleteCurrentEntry() {
+            if (!selectedItem) return;
+
+            const baseFilename = selectedItem.replace('.json', '');
+            fetch(`/api/delete/${baseFilename}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to delete');
+                console.log('Files deleted successfully');
+                updateMetadataList();
+                clearSelection();
+            })
+            .catch(error => console.error('Error deleting files:', error));
         }
 
         // Initial setup
