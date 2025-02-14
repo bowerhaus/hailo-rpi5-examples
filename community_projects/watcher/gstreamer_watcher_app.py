@@ -131,14 +131,18 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         detection_pipeline_wrapper = INFERENCE_PIPELINE_WRAPPER(detection_pipeline)
         tracker_pipeline = TRACKER_PIPELINE(class_id=-1)
         user_callback_pipeline = USER_CALLBACK_PIPELINE()
-        display_pipeline = NEW_DISPLAY_PIPELINE(video_sink="autovideosink", sync=self.sync, show_fps=self.show_fps)
+        display_pipeline = NEW_DISPLAY_PIPELINE(video_sink="xvimagesink", sync=self.sync, show_fps=self.show_fps)
 
         pipeline_string = (
             f'{source_pipeline} ! '
             f'{detection_pipeline_wrapper} ! '
             f'{tracker_pipeline} ! '
-            f'{user_callback_pipeline} ! '
+            f'{user_callback_pipeline} !'
             f'{display_pipeline}'
         )
         print(pipeline_string)
         return pipeline_string
+
+    def run(self):
+        self.user_data.pipeline = self.pipeline
+        super().run()

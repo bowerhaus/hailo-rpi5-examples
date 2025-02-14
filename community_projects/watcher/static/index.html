@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Events</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="split-container">
+        <div class="left-panel">
+            <div class="metadata-list" id="metadataList"></div>
+            <div class="vertical-splitter" id="verticalSplitter"></div>
+            <div class="json-viewer" id="jsonViewer"></div>
+        </div>
+        <div class="splitter" id="splitter"></div>
+        <div class="image-viewer">
+            <div class="image-container">
+                <img id="currentImage" class="current-image">
+                <div class="time-indicator" id="timeIndicator"></div>
+            </div>
+            <div class="button-container">
+                <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
+                <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
+                <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
+                <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
+                <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="/static/App.js"></script>
+    <script>
+        let isResizing = false;
+        let lastDownX = 0;
+        let currentWidth = 300;
+
+        // Splitter functionality
+        const splitter = document.getElementById('splitter');
+        const metadataList = document.getElementById('metadataList');
+        
+        splitter.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            lastDownX = e.clientX;
+            splitter.classList.add('dragging');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.split-container');
+            const leftPanel = document.querySelector('.left-panel');
+            const listPanel = document.getElementById('metadataList');
+            const jsonViewer = document.getElementById('jsonViewer');
+            
+            const delta = e.clientX - lastDownX;
+            currentWidth = Math.max(200, Math.min(container.offsetWidth * 0.8, currentWidth + delta));
+            
+            // Update both left panel and its children
+            leftPanel.style.width = `${currentWidth}px`;
+            listPanel.style.width = `${currentWidth}px`;
+            jsonViewer.style.width = `${currentWidth}px`;
+            
+            lastDownX = e.clientX;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            splitter.classList.remove('dragging');
+        });
+
+        // Vertical splitter functionality
+        let isVerticalResizing = false;
+        let lastDownY = 0;
+        let splitRatio = 0.6; // 60% for list, 40% for JSON
+
+        const verticalSplitter = document.getElementById('verticalSplitter');
+        const listPanel = document.getElementById('metadataList');
+        const jsonPanel = document.getElementById('jsonViewer');
+        
+        verticalSplitter.addEventListener('mousedown', (e) => {
+            isVerticalResizing = true;
+            lastDownY = e.clientY;
+            verticalSplitter.classList.add('dragging');
+            e.preventDefault(); // Prevent text selection while dragging
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isVerticalResizing) return;
+            
+            const container = listPanel.parentElement;
+            const containerHeight = container.offsetHeight;
+            const mouseY = e.clientY;
+            const containerRect = container.getBoundingClientRect();
+            const relativeY = mouseY - containerRect.top;
+            
+            splitRatio = Math.max(0.1, Math.min(0.9, relativeY / containerHeight));
+            
+            // Update heights
+            listPanel.style.flex = splitRatio;
+            jsonPanel.style.flex = 1 - splitRatio;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isVerticalResizing) {
+                isVerticalResizing = false;
+                verticalSplitter.classList.remove('dragging');
+            }
+        });
+
+        // Set initial panel sizes
+        listPanel.style.flex = splitRatio;
+        jsonPanel.style.flex = 1 - splitRatio;
+
+        // Rest of the existing JavaScript for image cycling
+        let currentImages = [];
+        let currentIndex = 0;
+        let imageInterval = null;
+        let selectedItem = null;
+        let currentJson = null;  // Store current JSON data
+
+        function updateMetadataList() {
+            console.log('Fetching metadata list...');
+            fetch('/api/metadata')
+                .then(response => response.json())
+                .then(files => {
+                    const list = document.getElementById('metadataList');
+                    const currentSelection = selectedItem;
+                    list.innerHTML = '';
+                    
+                    // Add click handler to the list container for deselection
+                    list.onclick = function(e) {
+                        if (e.target === list) {
+                            clearSelection();
+                        }
+                    };
+                    
+                    // Create an array of promises for fetching JSON data
+                    const promises = files.map(file => 
+                        fetch(`/media/${file}`)
+                            .then(response => response.json())
+                            .then(json => ({file, json}))
+                            .catch(error => ({file, json: null}))
+                    );
+                    
+                    // Wait for all JSON data to be fetched
+                    Promise.all(promises)
+                        .then(results => {
+                            results.forEach(({file, json}) => {
+                                const item = document.createElement('div');
+                                item.className = 'event-item';
+                                
+                                // Add helen-out or helen-back class based on label
+                                if (json && json.label === 'HELEN_OUT') {
+                                    item.classList.add('helen-out');
+                                } else if (json && json.label === 'HELEN_BACK') {
+                                    item.classList.add('helen-back');
+                                }
+                                
+                                // Only add selected class if there is a current selection
+                                if (file === currentSelection) {
+                                    item.classList.add('selected');
+                                }
+                                
+                                // Show only the timestamp part of the filename
+                                const displayName = file.split('_')[0] + '_' + file.split('_')[1];
+                                item.textContent = displayName;
+                                item.setAttribute('data-filename', file);
+                                item.onclick = (e) => {
+                                    e.stopPropagation(); // Prevent click from bubbling to list
+                                    selectEvent(file, item);
+                                };
+                                list.appendChild(item);
+                            });
+                        });
+                })
+                .catch(error => {
+                    console.error('Error fetching metadata:', error);
+                    const list = document.getElementById('metadataList');
+                    list.innerHTML = '<div class="event-item error">Error loading events</div>';
+                });
+        }
+
+        function clearSelection() {
+            selectedItem = null;
+            currentJson = null;
+            document.querySelectorAll('.event-item').forEach(item => 
+                item.classList.remove('selected'));
+            
+            // Clear JSON viewer
+            document.getElementById('jsonViewer').innerHTML = '';
+            
+            // Clear image and stop interval
+            if (imageInterval) {
+                clearInterval(imageInterval);
+                imageInterval = null;
+            }
+            document.getElementById('currentImage').src = '';
+            document.getElementById('timeIndicator').textContent = '';
+            
+            currentImages = [];
+            currentIndex = 0;
+        }
+
+        function formatJsonValue(value, indent) {
+            if (typeof value === 'string') return `<span class="string">"${value}"</span>`;
+            if (typeof value === 'number') return `<span class="number">${value}</span>`;
+            if (typeof value === 'boolean') return `<span class="boolean">${value}</span>`;
+            if (value === null) return `<span class="null">null</span>`;
+            if (Array.isArray(value)) {
+                const items = value.map(item => formatJsonValue(item, indent + 2)).join(',\n' + ' '.repeat(indent + 2));
+                return `[\n${' '.repeat(indent + 2)}${items}\n${' '.repeat(indent)}]`;
+            }
+            if (typeof value === 'object') {
+                return formatJsonObject(value, indent + 2);
+            }
+            return String(value);
+        }
+
+        function formatJsonObject(obj, indent = 0) {
+            const entries = Object.entries(obj);
+            const lines = entries.map(([key, value]) => {
+                const formattedValue = formatJsonValue(value, indent);
+                return `${' '.repeat(indent)}<span class="key">"${key}"</span>: ${formattedValue}`;
+            });
+            return lines.join(',\n');
+        }
+
+        function displayJson(json) {
+            currentJson = json;  // Save reference to current JSON
+            const viewer = document.getElementById('jsonViewer');
+            viewer.innerHTML = `{\n${formatJsonObject(json, 2)}\n}`;
+        }
+
+        function selectEvent(filename, element) {
+            // If selecting the same item again, just replay the sequence
+            const isReplay = filename === selectedItem;
+            
+            selectedItem = filename;
+            document.querySelectorAll('.event-item').forEach(item => 
+                item.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            // Load and display JSON content (skip if replaying)
+            if (!isReplay) {
+                fetch(`/media/${filename}`)
+                    .then(response => response.json())
+                    .then(json => displayJson(json));
+            }
+            
+            const baseFilename = filename.replace('.json', '');
+            
+            if (imageInterval) {
+                clearInterval(imageInterval);
+                imageInterval = null;
+            }
+
+            fetch(`/api/images/${baseFilename}`)
+                .then(response => response.json())
+                .then(images => {
+                    currentImages = images;
+                    currentIndex = 0;
+                    showCurrentImage();
+                    
+                    // Start new interval for cycling images
+                    imageInterval = setInterval(() => {
+                        currentIndex++;
+                        if (currentIndex >= currentImages.length) {
+                            // Stop at end of sequence
+                            clearInterval(imageInterval);
+                            imageInterval = null;
+                            return;
+                        }
+                        showCurrentImage();
+                    }, 1000); // Show one image per second
+                });
+        }
+
+        function showCurrentImage() {
+            if (currentImages.length > 0) {
+                const img = document.getElementById('currentImage');
+                img.src = `/media/${currentImages[currentIndex]}`;
+                document.getElementById('timeIndicator').textContent = 
+                    `Image ${currentIndex + 1} of ${currentImages.length}`;
+            }
+        }
+
+        function updateDirection(newDirection) {
+            if (!selectedItem || !currentJson) return;
+
+            // Set named_direction to basic direction
+            if (newDirection.startsWith('HELEN')) {
+                currentJson.named_direction = newDirection.split(' ')[1]; // Gets 'OUT' or 'BACK'
+                currentJson.label = newDirection.replace(' ', '_'); // Sets 'HELEN_OUT' or 'HELEN_BACK'
+            } else {
+                currentJson.named_direction = newDirection; // 'OUT', 'BACK', or 'OTHER'
+                currentJson.label = null;
+            }
+
+            // Update display
+            displayJson(currentJson);
+
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('JSON updated successfully');
+            })
+            .catch(error => console.error('Error updating JSON:', error));
+        }
+
+        // Initial setup
+        metadataList.style.width = currentWidth + 'px';
+        // Start with no selection
+        selectedItem = null;
+        currentJson = null;
+        updateMetadataList();
+        setInterval(updateMetadataList, 5000);
+    </script>
+</body>
+</html>
