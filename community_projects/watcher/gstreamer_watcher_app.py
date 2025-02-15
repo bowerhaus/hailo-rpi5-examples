@@ -9,6 +9,12 @@ from hailo_apps_infra.gstreamer_helper_pipelines import (
     get_source_type
 )
 from screeninfo import get_monitors
+import datetime
+import time
+from astral import LocationInfo
+from astral.sun import sun
+import threading
+from gi.repository import Gst
 
 
 def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
@@ -115,6 +121,14 @@ def NEW_DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false'
 
     return display_pipeline
 
+def get_active_period(date):
+    # Adjust location as needed; default uses London coordinates.
+    loc = LocationInfo("London", "England", "Europe/London", 51.5, -0.116)
+    s = sun(loc.observer, date=date)
+    active_start = s['sunrise'] - datetime.timedelta(hours=1)
+    active_end = s['sunset'] + datetime.timedelta(hours=1)
+    return active_start.replace(tzinfo=None), active_end.replace(tzinfo=None)
+
 class GStreamerWatcherApp(GStreamerDetectionApp):
     def __init__(self, callback, user_data):
         super().__init__(callback, user_data)
@@ -143,6 +157,40 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         print(pipeline_string)
         return pipeline_string
 
+    def monitor_active_period(self):
+        """Thread method to monitor active period and pause/play the pipeline accordingly."""
+        check_interval = 60  # seconds
+        while True:
+            # Only perform active period check if DAYTIME_ONLY is True
+            if not getattr(self.user_data, "daytime_only", False):
+                time.sleep(check_interval)
+                continue
+
+            now = datetime.datetime.now()
+            active_start, active_end = get_active_period(now.date())
+            if now < active_start or now > active_end:
+                # Outside active period; pause the pipeline if not already paused.
+                current_state = self.pipeline.get_state(0).state
+                if current_state != Gst.State.PAUSED:
+                    print("Outside active period. Pausing pipeline.")
+                    self.pipeline.set_state(Gst.State.PAUSED)
+            else:
+                # Within active period; play the pipeline if not already playing.
+                current_state = self.pipeline.get_state(0).state
+                if current_state != Gst.State.PLAYING:
+                    print("Within active period. Setting pipeline to PLAYING.")
+                    self.pipeline.set_state(Gst.State.PLAYING)
+            time.sleep(check_interval)
+
     def run(self):
+
+        # Proceed with the pipeline execution.
         self.user_data.pipeline = self.pipeline
-        super().run()
+
+        # Start the active period monitor thread.
+        monitor_thread = threading.Thread(target=self.monitor_active_period, daemon=True)
+        monitor_thread.start()
+
+        # Set pipeline to an initial state.
+        self.pipeline.set_state(Gst.State.PAUSED)
+        super(GStreamerWatcherApp, self).run()

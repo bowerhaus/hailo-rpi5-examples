@@ -23,7 +23,7 @@ from gstreamer_watcher_app import GStreamerWatcherApp
 
 import threading
 from web_server import app as web_app
-from time import sleep, time
+from time import sleep
 
 # Load configuration from config.json
 with open('config.json', 'r') as config_file:
@@ -460,15 +460,15 @@ if __name__ == "__main__":
     tts.save(HELLO) 
     playsound(HELLO, 0)
     
-    # Start web server first
+    # Start web server first.
     web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
     web_server_thread.daemon = True
     web_server_thread.start()
     
-    # Give web server time to initialize
-    sleep(1)
+    sleep(1)  # Give web server time to initialize.
     
-    # Start watcher app
+    # Create the watcher app instance and run it. Active time checking now occurs inside run().
     user_data = user_app_callback_class()
+    user_data.daytime_only = config.get("DAYTIME_ONLY", False)
     app = GStreamerWatcherApp(app_callback, user_data)
     app.run()
