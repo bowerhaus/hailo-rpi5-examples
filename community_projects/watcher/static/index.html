@@ -17,6 +17,11 @@
         </div>
         <div class="splitter" id="splitter"></div>
         <div class="image-viewer">
+            <div class="date-navigation">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="currentDate"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
             <div class="image-container">
                 <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
                     <p class="vjs-no-js">
@@ -27,9 +32,6 @@
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
-                <button class="arrow-button" onclick="changeDate(1)">←</button>
-                <div class="current-date" id="currentDate"></div>
-                <button class="arrow-button" onclick="changeDate(-1)">→</button>
                 <div class="direction-buttons-group">
                     <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
                     <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
