@@ -67,17 +67,33 @@
             dateElement.textContent = formatDisplayDate(currentDirectory);
         }
 
+        // New helper to refresh available dates from the server
+        async function refreshAvailableDates() {
+            try {
+                const response = await fetch('/api/dates');
+                availableDates = await response.json();
+            } catch (error) {
+                console.error('Error refreshing dates:', error);
+            }
+        }
+
+        // Modified changeDate function to check folder existence before updating
         async function changeDate(offset) {
+            await refreshAvailableDates(); // Refresh the date list
+
             const currentIndex = availableDates.indexOf(currentDirectory);
             const newIndex = currentIndex + offset;
-            
-            if (newIndex >= 0 && newIndex < availableDates.length) {
-                currentDirectory = availableDates[newIndex];
-                updateDateDisplay();
-                clearSelection();
-                updateMetadataList();
-                setupAutoRefresh();
+
+            // Check if the new index is valid after refresh
+            if (newIndex < 0 || newIndex >= availableDates.length) {
+                console.warn('Date folder not found for the selected date.');
+                return;
             }
+            currentDirectory = availableDates[newIndex];
+            updateDateDisplay();
+            clearSelection();
+            updateMetadataList();
+            setupAutoRefresh();
         }
 
         function setupAutoRefresh() {
@@ -250,20 +266,21 @@
                 });
         }
 
+        // Updated clearSelection to stop, remove event listeners, clear source, and remove video content
         function clearSelection() {
             selectedItem = null;
             currentJson = null;
-            document.querySelectorAll('.event-item').forEach(item => 
-                item.classList.remove('selected'));
-            
+            document.querySelectorAll('.event-item').forEach(item => item.classList.remove('selected'));
+
             // Clear JSON viewer
             document.getElementById('jsonViewer').innerHTML = '';
-            
-            // Clear video and stop interval
+
+            // Stop and clear video player contents
             const videoPlayer = videojs('videoPlayer');
-            videoPlayer.pause();
-            videoPlayer.src("");
-            videoPlayer.load();
+            if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.reset();
+            }
             
             document.getElementById('timeIndicator').textContent = '';
         }
