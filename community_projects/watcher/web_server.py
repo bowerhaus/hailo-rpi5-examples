@@ -25,8 +25,8 @@ def list_files():
 
 @app.route('/api/metadata')
 def list_metadata():
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     
     if not os.path.exists(directory):
         return jsonify([])
@@ -88,19 +88,31 @@ def delete_files(base_filename):
 
 @app.route('/media/<filename>')
 def serve_media(filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    # Extract the date from the start of the filename
+    match = re.match(r'^(\d{8})_', filename)
+    if not match:
+        return jsonify({'error': 'Invalid filename format'}), 400
+
+    date = match.group(1)
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     filepath = os.path.join(directory, filename)
 
-    if filename.endswith('.jpg'):
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+
+    if filename.endswith('.jpg') or filename.endswith('.json') or filename.endswith('.mp4'):
         return send_from_directory(directory, filename)
-    elif filename.endswith('.json'):
-        return send_from_directory(directory, filename)
-    elif filename.endswith('.mp4'):
-        if not os.path.exists(filepath):
-            return jsonify({'error': 'File not found'}), 404
-        return send_from_directory(directory, filename)
+    
     return '', 404
+
+@app.route('/api/dates')
+def list_dates():
+    if not os.path.exists(OUTPUT_DIRECTORY):
+        return jsonify([])
+
+    dates = [d for d in os.listdir(OUTPUT_DIRECTORY) if os.path.isdir(os.path.join(OUTPUT_DIRECTORY, d))]
+    dates.sort(reverse=True)  # Newest first
+    return jsonify(dates)
 
 @app.route('/')
 def index():

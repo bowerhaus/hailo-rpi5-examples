@@ -27,6 +27,9 @@
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="currentDate"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
                 <div class="direction-buttons-group">
                     <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
                     <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
@@ -44,6 +47,55 @@
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
     <script src="/static/App.js"></script>
     <script>
+        // Add current date handling
+        let currentDirectory = '';
+        let availableDates = [];
+
+        function getCurrentDateDir() {
+            const now = new Date();
+            return now.getFullYear().toString() +
+                   (now.getMonth() + 1).toString().padStart(2, '0') +
+                   now.getDate().toString().padStart(2, '0');
+        }
+
+        function formatDisplayDate(dateStr) {
+            return `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
+        }
+
+        function updateDateDisplay() {
+            const dateElement = document.getElementById('currentDate');
+            dateElement.textContent = formatDisplayDate(currentDirectory);
+        }
+
+        async function changeDate(offset) {
+            const currentIndex = availableDates.indexOf(currentDirectory);
+            const newIndex = currentIndex + offset;
+            
+            if (newIndex >= 0 && newIndex < availableDates.length) {
+                currentDirectory = availableDates[newIndex];
+                updateDateDisplay();
+                clearSelection();
+                updateMetadataList();
+                setupAutoRefresh();
+            }
+        }
+
+        function setupAutoRefresh() {
+            const today = getCurrentDateDir();
+            if (currentDirectory === today) {
+                if (!window.autoRefreshInterval) {
+                    window.autoRefreshInterval = setInterval(() => {
+                        updateMetadataList();
+                    }, 30000);
+                }
+            } else {
+                if (window.autoRefreshInterval) {
+                    clearInterval(window.autoRefreshInterval);
+                    window.autoRefreshInterval = null;
+                }
+            }
+        }
+
         let isResizing = false;
         let lastDownX = 0;
         let currentWidth = 300;
@@ -133,8 +185,11 @@
         let currentJson = null;  // Store current JSON data
 
         function updateMetadataList() {
-            console.log('Fetching metadata list...');
-            fetch('/api/metadata')
+            console.log('Fetching metadata list for date:', currentDirectory);
+            const list = document.getElementById('metadataList');
+            list.innerHTML = '';
+
+            fetch(`/api/metadata?date=${currentDirectory}`)
                 .then(response => response.json())
                 .then(files => {
                     const list = document.getElementById('metadataList');
@@ -353,12 +408,23 @@
         }
 
         // Initial setup
-        metadataList.style.width = currentWidth + 'px';
-        // Start with no selection
-        selectedItem = null;
-        currentJson = null;
-        updateMetadataList();
-        setInterval(updateMetadataList, 30000);
+        async function initialize() {
+            metadataList.style.width = currentWidth + 'px';
+            selectedItem = null;
+            currentJson = null;
+            
+            // Get available dates from server
+            const response = await fetch('/api/dates');
+            availableDates = await response.json();
+            
+            // Set current directory to most recent date
+            currentDirectory = availableDates[0] || getCurrentDateDir();
+            updateDateDisplay();
+            updateMetadataList();
+            setupAutoRefresh();
+        }
+
+        initialize();
     </script>
 </body>
 </html>
