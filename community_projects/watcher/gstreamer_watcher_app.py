@@ -182,6 +182,10 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
                     self.pipeline.set_state(Gst.State.PLAYING)
             time.sleep(check_interval)
 
+    def on_eos(self):
+        self.user_data.on_eos()
+        self.pipeline.set_state(Gst.State.PAUSED)
+
     def run(self):
 
         # Proceed with the pipeline execution.

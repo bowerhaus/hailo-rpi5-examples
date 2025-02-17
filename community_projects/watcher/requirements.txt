@@ -4,3 +4,4 @@ gtts
 playsound
 setproctitle
 flask
+astral
