@@ -353,7 +353,7 @@ class user_app_callback_class(app_callback_class):
         """
         if direction >= 10 and direction < 70:
             return "OUT"
-        if direction >= 190 and direction < 260:
+        if direction >= 200 and direction < 260:
             return "BACK"
         return "OTHER"
     
