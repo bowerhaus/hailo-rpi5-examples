@@ -1,0 +1,14 @@
+detection_pipeline.py
+gstreamer_helper_pipelines.py
+
+# Temporary images and videos, and logs
+output/
+input/
+logs/
+
+# Temporary files   
+classalert.mp3
+hello.mp3
+
+# Config files
+config.json
