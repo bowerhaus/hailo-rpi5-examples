@@ -8,6 +8,10 @@ from hailo_apps_infra.gstreamer_helper_pipelines import (
     get_camera_resulotion,
     get_source_type
 )
+from hailo_apps_infra.hailo_rpi_common import (
+    get_default_parser,
+    detect_hailo_arch,
+)
 from screeninfo import get_monitors
 import datetime
 import time
@@ -15,6 +19,7 @@ from astral import LocationInfo
 from astral.sun import sun
 import threading
 from gi.repository import Gst
+import os
 
 
 def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
@@ -130,8 +135,62 @@ def get_active_period(date):
     return active_start.replace(tzinfo=None), active_end.replace(tzinfo=None)
 
 class GStreamerWatcherApp(GStreamerDetectionApp):
-    def __init__(self, callback, user_data):
-        super().__init__(callback, user_data)
+    def __init__(self, app_callback, user_data):
+        parser = get_default_parser()
+        parser.add_argument(
+            "--labels-json",
+            default=None,
+            help="Path to costume labels JSON file",
+        )
+        args = parser.parse_args()
+        # Call the parent class constructor
+        super().__init__(args, user_data)
+        # Additional initialization code can be added here
+        # Set Hailo parameters these parameters should be set based on the model used
+        self.batch_size = 2
+        nms_score_threshold = 0.3
+        nms_iou_threshold = 0.45
+
+        #self.video_width =512
+        #self.video_height =512
+
+        # Determine the architecture if not specified
+        if args.arch is None:
+            detected_arch = detect_hailo_arch()
+            if detected_arch is None:
+                raise ValueError("Could not auto-detect Hailo architecture. Please specify --arch manually.")
+            self.arch = detected_arch
+            print(f"Auto-detected Hailo architecture: {self.arch}")
+        else:
+            self.arch = args.arch
+
+
+        if args.hef_path is not None:
+            self.hef_path = args.hef_path
+        # Set the HEF file path based on the arch
+        elif self.arch == "hailo8":
+            self.hef_path = os.path.join(self.current_path, '../resources/yolov8m.hef')
+        else:  # hailo8l
+            self.hef_path = os.path.join(self.current_path, '../resources/yolov8s_h8l.hef')
+
+        # Set the post-processing shared object file
+        self.post_process_so = os.path.join(self.current_path, '../resources/libyolo_hailortpp_postprocess.so')
+        self.post_function_name = "filter_letterbox"
+        # User-defined label JSON file
+        self.labels_json = args.labels_json
+
+        self.app_callback = app_callback
+
+        self.thresholds_str = (
+            f"nms-score-threshold={nms_score_threshold} "
+            f"nms-iou-threshold={nms_iou_threshold} "
+            f"output-format-type=HAILO_FORMAT_TYPE_FLOAT32"
+        )
+
+        # Set the process title
+        #setproctitle.setproctitle("Hailo Detection App")
+
+        self.create_pipeline()
 
     def get_pipeline_string(self):
         source_pipeline = NEW_SOURCE_PIPELINE(self.video_source, self.video_width, self.video_height)
@@ -190,7 +249,7 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
 
         # Proceed with the pipeline execution.
         self.user_data.pipeline = self.pipeline
-
+        
         # Start the active period monitor thread.
         monitor_thread = threading.Thread(target=self.monitor_active_period, daemon=True)
         monitor_thread.start()
