@@ -130,8 +130,8 @@ def get_active_period(date):
     # Adjust location as needed; default uses London coordinates.
     loc = LocationInfo("London", "England", "Europe/London", 51.5, -0.116)
     s = sun(loc.observer, date=date)
-    active_start = s['sunrise'] - datetime.timedelta(hours=1)
-    active_end = s['sunset'] + datetime.timedelta(hours=1)
+    active_start = s['sunrise'] - datetime.timedelta(minutes=30)
+    active_end = s['sunset'] + datetime.timedelta(minutes=30)
     return active_start.replace(tzinfo=None), active_end.replace(tzinfo=None)
 
 class GStreamerPeetronicApp(GStreamerDetectionApp):
