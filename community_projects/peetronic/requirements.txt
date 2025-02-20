@@ -1,0 +1,7 @@
+screeninfo
+loguru
+gtts
+playsound
+setproctitle
+flask
+astral
