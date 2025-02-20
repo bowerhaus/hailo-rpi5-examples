@@ -73,10 +73,16 @@ def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_f
             f'{QUEUE(name=f"{name}_queue_decode")} ! '
             f'decodebin name={name}_decodebin ! '
         )
+
+    # This can be used to rotate the input by 90 degrees but seems to add lag to the pipeline
+    # source_element += f"rotate angle=1.5707 ! "
+
     source_pipeline = (
         f'{source_element} '
         f'{QUEUE(name=f"{name}_scale_q")} ! '
         f'videoscale name={name}_videoscale n-threads=2 ! '
+        #f'{QUEUE(name=f"{name}_crop_q")} ! '
+        #f'videocrop top=0 left=0 right=320 bottom=320 ! '
         f'{QUEUE(name=f"{name}_convert_q")} ! '
         f'videoconvert n-threads=3 name={name}_convert qos=false ! '
         f'video/x-raw, pixel-aspect-ratio=1/1, format={video_format}, width={video_width}, height={video_height} '
