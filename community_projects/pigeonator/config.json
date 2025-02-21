@@ -1,5 +1,5 @@
 {
-    "CLASS_TO_TRACK": "dog",
+    "CLASS_TO_TRACK": "bird",
     "CLASS_DETECTED_COUNT": 4,
     "CLASS_GONE_SECONDS": 3,
     "CLASS_MATCH_CONFIDENCE": 0.4,
