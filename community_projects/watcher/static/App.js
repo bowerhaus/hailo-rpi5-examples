@@ -14,7 +14,8 @@ new Vue({
         fetchFiles() {
             this.loading = true;
             this.error = null;
-            axios.get('/api/files')
+            // Pass in the current date (assumed to be available as window.currentDirectory)
+            axios.get('/api/files?date=' + window.currentDirectory)
                 .then(response => {
                     this.files = response.data;
                 })

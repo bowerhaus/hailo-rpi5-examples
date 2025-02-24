@@ -32,6 +32,8 @@
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
+                <!-- New toggle button with id "toggle-reviewed-button" inserted to the left -->
+                <button id="toggle-reviewed-button" class="toggle-reviewed-button" onclick="toggleReviewed()">Reviewed</button>
                 <div class="direction-buttons-group">
                     <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
                     <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
@@ -211,8 +213,12 @@
                 .then(response => response.json())
                 .then(files => {
                     const list = document.getElementById('metadataList');
-                    const currentSelection = selectedItem;
                     list.innerHTML = '';
+                    // Show a placeholder if no metadata present
+                    if (files.length === 0) {
+                        list.innerHTML = '<div class="event-item">No events found</div>';
+                        return;
+                    }
                     
                     // Add click handler to the list container for deselection
                     list.onclick = function(e) {
@@ -236,17 +242,19 @@
                                 const item = document.createElement('div');
                                 item.className = 'event-item';
                                 
-                                // Add helen-out or helen-back class based on label
+                                // First set reviewed class if the item is reviewed
+                                if (json && json.reviewed) {
+                                    item.classList.add('reviewed');
+                                }
+                                
+                                // Then add helen-specific classes if present
                                 if (json && json.label === 'HELEN_OUT') {
                                     item.classList.add('helen-out');
                                 } else if (json && json.label === 'HELEN_BACK') {
                                     item.classList.add('helen-back');
-                                } else if (json && json.reviewed === true) {
-                                    // Only add reviewed class if no helen-specific class exists
-                                    item.classList.add('reviewed');
                                 }
                                 
-                                if (file === currentSelection) {
+                                if (file === selectedItem) {
                                     item.classList.add('selected');
                                 }
                                 
@@ -323,10 +331,21 @@
                 item.classList.remove('selected'));
             element.classList.add('selected');
             
-            // Load and display JSON content
+            // Load and display JSON content and update the reviewed button state
             fetch(`/media/${filename}`)
                 .then(response => response.json())
-                .then(json => displayJson(json));
+                .then(json => {
+                    displayJson(json);
+                    // Update reviewed toggle state based on json.reviewed flag
+                    const btn = document.getElementById('toggle-reviewed-button');
+                    if (json.reviewed) {
+                        btn.classList.add('reviewed');
+                        btn.innerHTML = "Reviewed ✓";
+                    } else {
+                        btn.classList.remove('reviewed');
+                        btn.innerHTML = "Reviewed";
+                    }
+                });
             
             const baseFilename = filename.replace('.json', '');
             const videoFilename = `/media/${baseFilename}.mp4`;
@@ -363,16 +382,19 @@
             const item = document.querySelector(`[data-filename="${filename}"]`);
             if (!item) return;
 
-            // Remove any existing helen-out/helen-back classes
+            // Remove existing classes
             item.classList.remove('helen-out', 'helen-back', 'reviewed');
             
-            // Add appropriate class based on new label
+            // First set reviewed class if the item is reviewed
+            if (json.reviewed) {
+                item.classList.add('reviewed');
+            }
+            
+            // Then add helen-specific classes if present
             if (json.label === 'HELEN_OUT') {
                 item.classList.add('helen-out');
             } else if (json.label === 'HELEN_BACK') {
                 item.classList.add('helen-back');
-            } else if (json.reviewed === true) {
-                item.classList.add('reviewed');
             }
         }
 
@@ -391,12 +413,22 @@
             // Mark as reviewed when direction is updated
             currentJson.reviewed = true;
 
-            // Update display
+            // Update display and list item
             displayJson(currentJson);
             updateSingleListItem(selectedItem, currentJson);
 
+            // Update the Reviewed button state accordingly
+            const btn = document.getElementById('toggle-reviewed-button');
+            if (currentJson.reviewed) {
+                btn.classList.add('reviewed');
+                btn.innerHTML = "Reviewed ✓";
+            } else {
+                btn.classList.remove('reviewed');
+                btn.innerHTML = "Reviewed";
+            }
+
             // Send updated JSON to server
-            fetch(`/api/update/${selectedItem}`, {
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -414,7 +446,7 @@
             if (!selectedItem) return;
 
             const baseFilename = selectedItem.replace('.json', '');
-            fetch(`/api/delete/${baseFilename}`, {
+            fetch(`/api/delete/${baseFilename}?date=${currentDirectory}`, {
                 method: 'DELETE'
             })
             .then(response => {
@@ -426,23 +458,53 @@
             .catch(error => console.error('Error deleting files:', error));
         }
 
+        function toggleReviewed() {
+            if (!selectedItem || !currentJson) return;
+            // Toggle the reviewed flag
+            currentJson.reviewed = !currentJson.reviewed;
+            // Update JSON display and list item
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            // Update button appearance and text
+            const btn = document.getElementById('toggle-reviewed-button');
+            if (currentJson.reviewed) {
+                btn.classList.add('reviewed');
+                btn.innerHTML = "Reviewed ✓";
+            } else {
+                btn.classList.remove('reviewed');
+                btn.innerHTML = "Reviewed";
+            }
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Reviewed flag toggled successfully');
+            })
+            .catch(error => console.error('Error updating reviewed flag:', error));
+        }
+
         // Initial setup
         async function initialize() {
             metadataList.style.width = currentWidth + 'px';
             selectedItem = null;
             currentJson = null;
-            
             // Get available dates from server
             const response = await fetch('/api/dates');
             availableDates = await response.json();
-            
-            // Set current directory to most recent date
-            currentDirectory = availableDates[0] || getCurrentDateDir();
+            // Always set currentDirectory using availableDates or today's date
+            if (availableDates.length > 0) {
+                currentDirectory = availableDates[0];
+            } else {
+                currentDirectory = getCurrentDateDir();
+            }
             updateDateDisplay();
             updateMetadataList();
             setupAutoRefresh();
         }
-
         initialize();
     </script>
 </body>
