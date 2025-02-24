@@ -1,10 +1,12 @@
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, send_from_directory, jsonify, request, send_file
 import os
 import datetime
 import re
 import json
 import subprocess  # Import the subprocess module
 import tempfile  # Import the tempfile module
+from io import BytesIO
+from clock import Clock  # Import the Clock class
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -103,8 +105,25 @@ def list_dates():
     dates.sort(reverse=True)  # Newest first
     return jsonify(dates)
 
+# NEW: Add an API endpoint to generate and return a clock image
+@app.route('/api/clock_image')
+def get_clock_image():
+    clock = Clock()  # Create Clock instance
+    pil_img = clock.create_clock_image()  # Generate clock image (including current time overlay)
+    # Optionally, overlay the current time using draw_current_hour_hand:
+    pil_img = clock.draw_current_hour_hand(pil_img)
+    
+    img_io = BytesIO()
+    pil_img.save(img_io, 'PNG')
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/png')
+
 @app.route('/')
-def index():
+def home():
+    return send_from_directory('static', 'home.html')
+
+@app.route('/review')
+def review():
     return send_from_directory('static', 'index.html')
 
 if __name__ == '__main__':
