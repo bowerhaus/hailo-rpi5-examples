@@ -351,9 +351,9 @@ class user_app_callback_class(app_callback_class):
         Returns:
             str: The named direction.
         """
-        if direction >= 10 and direction < 70:
+        if direction >= 25 and direction < 100:
             return "OUT"
-        if direction >= 200 and direction < 260:
+        if direction >= 205 and direction < 280:
             return "BACK"
         return "OTHER"
     
