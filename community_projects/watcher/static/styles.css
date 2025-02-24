@@ -164,6 +164,8 @@ body {
     cursor: pointer;
     border-bottom: 1px solid #ddd;
     transition: all 0.2s;
+    font-weight: normal;  /* Default to normal weight */
+    color: black;  /* Default color */
 }
 
 .event-item:hover {
@@ -176,13 +178,11 @@ body {
 }
 
 .event-item.helen-out {
-    color: #dc3545;
-    font-weight: bold;
+    color: #dc3545 !important;  /* Same red as HELEN OUT button */
 }
 
 .event-item.helen-back {
-    color: #28a745;
-    font-weight: bold;
+    color: #28a745 !important;  /* Same green as HELEN BACK button */
 }
 
 .event-item.helen-out.selected {
@@ -209,6 +209,17 @@ body {
 .event-item.helen-out,
 .event-item.helen-back {
     /* These styles will take precedence over .reviewed */
+}
+
+/* Selected states for HELEN items */
+.event-item.helen-out.selected {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.event-item.helen-back.selected {
+    background-color: #28a745 !important;
+    color: white !important;
 }
 
 .current-image {
@@ -265,6 +276,27 @@ body {
     background: #5a6268;
 }
 
+.toggle-reviewed-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #6c757d;  /* Grey like the Delete button */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 10px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.toggle-reviewed-button:hover {
+    background: #5a6268;
+}
+
+.toggle-reviewed-button.reviewed {
+    background: #ff8c00;  /* Orange when reviewed */
+    /* No box-shadow to keep it flat */
+}
+
 .current-date {
     color: white;
     font-size: 16px;
@@ -279,4 +311,12 @@ body {
     gap: 10px;
     padding: 10px 0;
     background: #1a1a1a;
+}
+
+/* Update selected states to always show white text */
+.event-item.selected,
+.event-item.helen-out.selected,
+.event-item.helen-back.selected,
+.event-item.reviewed.selected {
+    color: white !important;
 }
