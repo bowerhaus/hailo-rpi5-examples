@@ -68,14 +68,13 @@ class Clock:
         
         return records
 
-    def build_clock(self):
+    def build_clock(self, days="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"):
         """
-        Returns an array of records containing time periods and their counts.
-        Each record now represents a 5-minute period in a 24-hour day with format:
-        { 'time': datetime.time object, 'count': N }
+        Returns an array of records for each 5-minute period in a 24-hour day.
+        Filters records by day names provided (comma-separated string). Default is every day.
         Total buckets = 288 (24×12).
         """
-        # Initialize array of 288 time period records (5 min per bucket)
+        # Initialize clock_records (unchanged)
         clock_records = []
         for bucket in range(288):
             hour = bucket // 12
@@ -84,17 +83,29 @@ class Clock:
                 'time': time(hour=hour, minute=minute),
                 'count': 0
             })
-
+            
         records = self.build_data()
+        # Filter records by allowed day names
+        allowed_days = set(day.strip() for day in days.split(','))
+        filtered_records = []
+        for rec in records:
+            try:
+                # Extract date from timestamp and determine day name
+                rec_date = datetime.strptime(rec['timestamp'][:8], "%Y%m%d")
+                if rec_date.strftime("%A") in allowed_days:
+                    filtered_records.append(rec)
+            except Exception as e:
+                print(f"Error parsing date in record: {e}")
+        records = filtered_records
+        
         if len(records) < 2:
             return clock_records
 
-        # Process adjacent pairs of records (update conversion to 5-minute buckets)
+        # Process adjacent pairs of records (unchanged conversion to 5-minute buckets)
         for i in range(0, len(records) - 1, 2):
             start_ts = records[i]['timestamp']
             end_ts = records[i + 1]['timestamp']
 
-            # Convert timestamps to bucket indices (each bucket is 5 minutes)
             start_hour = int(start_ts[9:11])
             start_minute = int(start_ts[11:13])
             start_bucket = (start_hour * 12) + (start_minute // 5)
@@ -103,12 +114,11 @@ class Clock:
             end_minute = int(end_ts[11:13])
             end_bucket = (end_hour * 12) + (end_minute // 5)
 
-            # Increment counts between start and end (inclusive)
             for bucket in range(start_bucket, end_bucket + 1):
                 if 0 <= bucket < 288:
                     clock_records[bucket]['count'] += 1
 
-        # Print only records with non-zero counts
+        # Print only records with non-zero counts (unchanged)
         for record in clock_records:
             if record['count'] > 0:
                 print(f"Time {record['time'].strftime('%H:%M')}: {record['count']}")
@@ -160,7 +170,7 @@ class Clock:
         
         return Image.fromarray(img_array, 'RGBA')
         
-    def create_clock_image(self, size=1024, padding=50):
+    def create_clock_image(self, days="Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday", size=1024, padding=50):
         """
         Creates a circular heatmap image for hours between 08:00 and 20:00.
         Uses a green-to-red gradient based on counts and overlays a current hour hand.
@@ -171,7 +181,7 @@ class Clock:
         radius = center - padding  # Add padding
         
         # For 5-min buckets, 08:00 is bucket index 8*12 = 96, 20:00 is 20*12 = 240. Total = 144 buckets.
-        clock_records = self.build_clock()
+        clock_records = self.build_clock(days)
         day_records = clock_records[96:240]  # 144 buckets
         
         counts = np.array([record['count'] for record in day_records])
@@ -254,10 +264,9 @@ class Clock:
         
 if __name__ == "__main__":
     clock = Clock()
-    data = clock.build_clock()
 
     # Create clock heatmap image
-    image = clock.create_clock_image()
+    image = clock.create_clock_image("Saturday,Sunday")
 
     image = clock.draw_current_hour_hand(image)
     image.save("clock.png")

@@ -108,9 +108,10 @@ def list_dates():
 # NEW: Add an API endpoint to generate and return a clock image
 @app.route('/api/clock_image')
 def get_clock_image():
-    clock = Clock()  # Create Clock instance
-    pil_img = clock.create_clock_image()  # Generate clock image (including current time overlay)
-    # Optionally, overlay the current time using draw_current_hour_hand:
+    clock = Clock()
+    # Read days query parameter; default to all days if not provided
+    days = request.args.get('days', "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday")
+    pil_img = clock.create_clock_image(days=days)
     pil_img = clock.draw_current_hour_hand(pil_img)
     
     img_io = BytesIO()
