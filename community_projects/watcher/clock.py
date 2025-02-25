@@ -175,6 +175,20 @@ class Clock:
         Creates a circular heatmap image for hours between 08:00 and 20:00.
         Uses a green-to-red gradient based on counts and overlays a current hour hand.
         """
+        import os, time as t
+        from PIL import Image
+        
+        # --- Begin caching logic ---
+        cache_dir = os.path.join(os.path.dirname(__file__), "cache")
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+        # Create a simple cache key by sanitizing the days string
+        cache_key = days.replace(",", "_").replace(" ", "")
+        cache_file = os.path.join(cache_dir, f"clock_{cache_key}.png")
+        if os.path.exists(cache_file) and (t.time() - os.path.getmtime(cache_file)) < 86400:
+            return Image.open(cache_file)
+        # --- End caching logic ---
+
         import numpy as np
         
         center = size // 2
@@ -267,6 +281,9 @@ class Clock:
 
         # After all drawing operations, convert the NumPy array to a PIL image.
         pil_img = Image.fromarray(img_array, 'RGBA')
+        
+        # Save generated image to cache file for 24 hours caching.
+        pil_img.save(cache_file)
         return pil_img
 
         
