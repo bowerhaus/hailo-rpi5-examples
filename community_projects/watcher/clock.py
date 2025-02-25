@@ -233,8 +233,16 @@ class Clock:
             display_hour = hour if hour <= 12 else hour - 12
             text_x = int(center + 0.75 * radius * np.sin(marker_angle))
             text_y = int(center - 0.75 * radius * np.cos(marker_angle))
+            if display_hour in (3, 6, 9, 12):
+                font_scale = 1.5 * 1.5
+                text_thickness = 3
+                font = cv2.FONT_HERSHEY_SCRIPT_COMPLEX
+            else:
+                font_scale = 1.5
+                text_thickness = 1
+                font = cv2.FONT_HERSHEY_SIMPLEX
             cv2.putText(img_array, str(display_hour), (text_x-15, text_y+15), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255,255,255,255), 3, cv2.LINE_AA)
+                        font, font_scale, (255,255,255,255), text_thickness, cv2.LINE_AA)
 
         # Draw an outline around the entire clock face in white with 15 pixel thickness.
         cv2.circle(img_array, (center, center), radius, (255,255,255,255), 15, lineType=cv2.LINE_AA)
