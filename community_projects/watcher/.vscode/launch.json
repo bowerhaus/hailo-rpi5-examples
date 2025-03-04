@@ -25,10 +25,10 @@
             //"args": ["--hide-overlay"]
         },
         {
-            "name": "Python: Run Relabeller",
+            "name": "Python: Run Clock",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/relabel.py",
+            "program": "${workspaceFolder}/clock.py",
             "console": "integratedTerminal",
         }
     ]

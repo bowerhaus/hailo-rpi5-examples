@@ -1,68 +1,63 @@
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, send_from_directory, jsonify, request, send_file
 import os
 import datetime
 import re
 import json
 import subprocess  # Import the subprocess module
 import tempfile  # Import the tempfile module
+from io import BytesIO
+from clock import Clock  # Import the Clock class
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
 
+def get_date_param():
+    date = request.args.get('date')
+    if not date or date == 'undefined':
+        date = datetime.datetime.now().strftime("%Y%m%d")
+    return date
+
 @app.route('/api/files')
 def list_files():
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
+    date = get_date_param()
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     if not os.path.exists(directory):
         return jsonify([])
-
     files = os.listdir(directory)
     image_files = [f for f in files if f.endswith('.jpg')]
-    # Sort files by timestamp (newest first)
     image_files.sort(reverse=True)
     return jsonify(image_files)
 
 @app.route('/api/metadata')
 def list_metadata():
-    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    date = get_date_param()
     directory = os.path.join(OUTPUT_DIRECTORY, date)
-    
     if not os.path.exists(directory):
         return jsonify([])
-
     files = os.listdir(directory)
     json_files = [f for f in files if f.endswith('.json')]
-    json_files.sort(reverse=True)  # Newest first
+    json_files.sort(reverse=True)
     return jsonify(json_files)
 
 @app.route('/api/images/<root_filename>')
 def list_sequence_images(root_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
-    # Remove the _xN_M suffix from filename to get base name
+    date = get_date_param()
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     base_name = re.sub(r'_x\d+_\d+$', '', root_filename)
-    
-    # Find all sequence images matching the base name
     all_files = os.listdir(directory)
     sequence_images = [f for f in all_files if f.startswith(base_name) and '[' in f and f.endswith('.jpg')]
-    sequence_images.sort()  # Sort by sequence number
-    
+    sequence_images.sort()
     return jsonify(sequence_images)
 
 @app.route('/api/update/<filename>', methods=['POST'])
 def update_json(filename):
+    date = get_date_param()
     if not filename.endswith('.json'):
         return jsonify({'error': 'Invalid file type'}), 400
-        
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     filepath = os.path.join(directory, filename)
-    
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
-        
     try:
         json_data = request.get_json()
         with open(filepath, 'w') as f:
@@ -73,17 +68,13 @@ def update_json(filename):
 
 @app.route('/api/delete/<base_filename>', methods=['DELETE'])
 def delete_files(base_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
+    date = get_date_param()
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     if not os.path.exists(directory):
         return jsonify({'error': 'Directory not found'}), 404
-
-    # Find and delete all files with the same base filename
     files_to_delete = [f for f in os.listdir(directory) if f.startswith(base_filename)]
     for file in files_to_delete:
         os.remove(os.path.join(directory, file))
-    
     return jsonify({'success': True, 'deleted_files': files_to_delete})
 
 @app.route('/media/<filename>')
@@ -114,8 +105,26 @@ def list_dates():
     dates.sort(reverse=True)  # Newest first
     return jsonify(dates)
 
+# NEW: Add an API endpoint to generate and return a clock image
+@app.route('/api/clock_image')
+def get_clock_image():
+    clock = Clock()
+    # Read days query parameter; default to all days if not provided
+    days = request.args.get('days', "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday")
+    pil_img = clock.create_clock_image(days=days)
+    pil_img = clock.draw_current_hour_hand(pil_img)
+    
+    img_io = BytesIO()
+    pil_img.save(img_io, 'PNG')
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/png')
+
 @app.route('/')
-def index():
+def home():
+    return send_from_directory('static', 'home.html')
+
+@app.route('/review')
+def review():
     return send_from_directory('static', 'index.html')
 
 if __name__ == '__main__':
