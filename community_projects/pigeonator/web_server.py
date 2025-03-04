@@ -3,8 +3,13 @@ import os
 import datetime
 import re
 import json
-import subprocess  # Import the subprocess module
-import tempfile  # Import the tempfile module
+import subprocess
+import tempfile
+import logging
+
+# Configure logging to only show errors
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger('flask').setLevel(logging.ERROR)
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -56,8 +61,9 @@ def update_json(filename):
     if not filename.endswith('.json'):
         return jsonify({'error': 'Invalid file type'}), 400
         
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    # Extract date from request parameters
+    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     filepath = os.path.join(directory, filename)
     
     if not os.path.exists(filepath):
@@ -73,8 +79,9 @@ def update_json(filename):
 
 @app.route('/api/delete/<base_filename>', methods=['DELETE'])
 def delete_files(base_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    # Extract date from request parameters
+    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     
     if not os.path.exists(directory):
         return jsonify({'error': 'Directory not found'}), 404
