@@ -165,7 +165,7 @@ class user_app_callback_class(app_callback_class):
             self.start_video_recording(self.width, self.height, video_filename, self.format, FRAME_RATE)
 
         phrase = f"{CLASS_TO_TRACK.upper()} DETECTED"
-        logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
+        logger.info(f"{phrase} at: {datetime.datetime.now()}")
         playsound(CLASS_ALERT, 0)
 
     def active_tracking(self, class_detections):
@@ -215,7 +215,6 @@ class user_app_callback_class(app_callback_class):
 
     def stop_active_tracking(self):
         self.is_active_tracking = False
-        self.end_centroid = self.object_centroid
 
         avg_detection_count = self.get_average_detection_instance_count()
         avg_detection_count_rounded = round(avg_detection_count)
@@ -264,10 +263,7 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"Metadata saved: {metadata}")
 
         self.max_instances = 0
-        self.save_frame = None
-        self.object_centroid = None
         self.avg_velocity = Point2D(0.0, 0.0)
-        self.previous_centroid = None
         self.detection_counts.clear()
         self.max_mean_detection_count = 0
   
@@ -324,7 +320,6 @@ def app_callback(pad, info, user_data):
     object_detected = False
     if detection_instance_count > 0:
         object_detected = True
-        user_data.object_centroid = user_data.get_avg_centroid(class_detections).round()
         user_data.detection_frame = user_data.current_frame
 
     # Debouncing logic to start/stop active tracking
