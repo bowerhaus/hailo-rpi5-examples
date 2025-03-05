@@ -85,8 +85,7 @@ class user_app_callback_class(app_callback_class):
         self.total_detection_instances = 0
         self.active_detection_count = 0
         self.detection_counts = []
-        self.max_mean_detection_count = 0
-
+   
         # Variables for computing moving average of velocity
         self.avg_velocity = Point2D(0.0, 0.0)
         self.previous_centroid = None
@@ -107,8 +106,6 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
-        self.video_frame_count = 0
-        self.max_video_frames = config.get('VIDEO_MAX_SECONDS', 30) * FRAME_RATE  # Limit video recording duration
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # Limit video duration in seconds
         self.video_start_time = None
         self.video_truncated = False  # Flag to log truncation once
@@ -122,7 +119,6 @@ class user_app_callback_class(app_callback_class):
         self.video_filename = video_filename.replace('.mp4', '.m4v')  # Use .m4v extension initially
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
-        self.video_frame_count = 0  # Reset frame count at start
         self.video_start_time = datetime.datetime.now()  # Record start time
 
     def write_video_frame(self, frame):
@@ -316,7 +312,6 @@ class user_app_callback_class(app_callback_class):
         self.avg_velocity = Point2D(0.0, 0.0)
         self.previous_centroid = None
         self.detection_counts.clear()
-        self.max_mean_detection_count = 0
     
 def app_callback(pad, info, user_data):
     """
