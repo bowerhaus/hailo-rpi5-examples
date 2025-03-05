@@ -107,6 +107,12 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
+        self.video_frame_count = 0
+        self.max_video_frames = config.get('VIDEO_MAX_SECONDS', 30) * FRAME_RATE  # NEW: Limit video recording duration
+        self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # NEW: Limit video duration in seconds
+        self.video_start_time = None
+        self.video_truncated = False  # NEW: Flag to log truncation once
+
     def on_eos(self):
         if self.is_active_tracking:
             self.stop_active_tracking()
@@ -115,6 +121,8 @@ class user_app_callback_class(app_callback_class):
         self.video_filename = video_filename.replace('.mp4', '.m4v')  # Use .m4v extension initially
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
+        self.video_frame_count = 0  # Reset frame count at start
+        self.video_start_time = datetime.datetime.now()  # NEW: Record start time
 
     def write_video_frame(self, frame):
         if self.video_writer is not None and self.current_frame is not None:
@@ -122,19 +130,12 @@ class user_app_callback_class(app_callback_class):
 
     def draw_detection_boxes(self, detections, width, height):
         if self.current_frame is not None and SHOW_DETECTION_BOXES:
-            PADDING = 8  # Pixels to add around each box
             for detection in detections:
                 bbox = detection.get_bbox()
-                # Calculate padded coordinates, ensuring they stay within frame bounds
-                x_min = max(0, int(bbox.xmin() * width) - PADDING)
-                y_min = max(0, int(bbox.ymin() * height) - PADDING)
-                x_max = min(width, int(bbox.xmax() * width) + PADDING)
-                y_max = min(height, int(bbox.ymax() * height) + PADDING)
-                
                 cv2.rectangle(self.current_frame, 
-                            (x_min, y_min),
-                            (x_max, y_max),
-                            (0, 0, 255), 1)
+                              (int(bbox.xmin() * width), int(bbox.ymin() * height)), 
+                              (int(bbox.xmax() * width), int(bbox.ymax() * height)), 
+                              (0, 0, 255), 1)
 
     def stop_video_recording(self, final_filename):
         if self.video_writer is not None:
@@ -195,8 +196,14 @@ class user_app_callback_class(app_callback_class):
                 self.save_frame = self.current_frame
 
         # If a frame is available, write the frame to the video
-        if self.current_frame is not None:
-            self.write_video_frame(self.current_frame)
+        if self.current_frame is not None and self.video_writer is not None and self.video_start_time:
+            elapsed = (datetime.datetime.now() - self.video_start_time).total_seconds()
+            if elapsed < self.max_video_seconds:
+                self.write_video_frame(self.current_frame)
+            else:
+                if not self.video_truncated:
+                    logger.info(f"Video truncated after {self.max_video_seconds} seconds.")
+                    self.video_truncated = True
 
     def convert_video_to_h264(self, video_path):
         """Convert video to H264 format using ffmpeg"""
