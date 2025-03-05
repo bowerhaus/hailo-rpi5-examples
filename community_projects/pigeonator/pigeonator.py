@@ -108,10 +108,11 @@ class user_app_callback_class(app_callback_class):
         self.height = None
 
         self.video_frame_count = 0
-        self.max_video_frames = config.get('VIDEO_MAX_SECONDS', 30) * FRAME_RATE  # NEW: Limit video recording duration
-        self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # NEW: Limit video duration in seconds
+        self.max_video_frames = config.get('VIDEO_MAX_SECONDS', 30) * FRAME_RATE  # Limit video recording duration
+        self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # Limit video duration in seconds
         self.video_start_time = None
-        self.video_truncated = False  # NEW: Flag to log truncation once
+        self.video_truncated = False  # Flag to log truncation once
+        self.app = None  # Store reference to app instance
 
     def on_eos(self):
         if self.is_active_tracking:
@@ -122,7 +123,7 @@ class user_app_callback_class(app_callback_class):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
         self.video_frame_count = 0  # Reset frame count at start
-        self.video_start_time = datetime.datetime.now()  # NEW: Record start time
+        self.video_start_time = datetime.datetime.now()  # Record start time
 
     def write_video_frame(self, frame):
         if self.video_writer is not None and self.current_frame is not None:
@@ -153,7 +154,7 @@ class user_app_callback_class(app_callback_class):
             moving_averages = np.convolve(detection_counts_np, np.ones(window_size)/window_size, mode='valid')
             return moving_averages.max()
         else:
-            return np.mean(detection_counts_np)
+            return np.mean(detection_counts)
 
     def start_active_tracking(self, class_detections):
         self.is_active_tracking = True
@@ -181,7 +182,7 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(CLASS_ALERT, 0)
 
-        # NEW: Record maximum detection confidence when tracking starts
+        # Record maximum detection confidence when tracking starts
         self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
 
     def active_tracking(self, class_detections):
@@ -268,7 +269,7 @@ class user_app_callback_class(app_callback_class):
             cv2.imwrite(self.image_filename, self.save_frame)
             logger.info(f"Image saved as {self.image_filename}")
 
-        # NEW: Compute event duration in seconds from active_timestamp.
+        # Compute event duration in seconds from active_timestamp.
         # Append "000" to recover full microsecond format if needed.
         try:
             event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
@@ -276,15 +277,22 @@ class user_app_callback_class(app_callback_class):
             event_start = datetime.datetime.now()
         event_seconds = (datetime.datetime.now() - event_start).total_seconds()
 
+        # Extract model name from HEF path
+        model_name = "unknown"
+        if self.app and hasattr(self.app, 'hef_path'):
+            model_name = os.path.splitext(os.path.basename(self.app.hef_path))[0]
+
         # Create metadata dictionary
         metadata = {
             "filename": root_filename,
             "class": CLASS_TO_TRACK,
-            "initial_confidence": self.initial_max_confidence,  # NEW: Add initial_max_confidence to metadata.
+            "initial_confidence": round(self.initial_max_confidence, 2),  # Round to 2 decimal places
+            "model": model_name,
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
-            "event_seconds": event_seconds,  # NEW: Added event duration in seconds.
+            "event_seconds": event_seconds,
+            "video_truncated": self.video_truncated,  # Add truncation status to metadata
             "reviewed": False  # Add reviewed field, initially false
         }
 
@@ -380,7 +388,7 @@ def app_callback(pad, info, user_data):
 
     return Gst.PadProbeReturn.OK
 
-if __name__ == "__main__":
+if __name__=="__main__":
     # Create an instance of the user app callback class
     tts = gtts.gTTS(f"Hello Pigeonator")
     tts.save(HELLO) 
@@ -397,4 +405,5 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     user_data.daytime_only = config.get("DAYTIME_ONLY", False)
     app = GStreamerPigeonatorApp(app_callback, user_data)
+    user_data.app = app  # Store app reference in user_data
     app.run()
