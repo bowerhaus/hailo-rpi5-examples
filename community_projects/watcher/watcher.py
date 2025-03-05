@@ -129,7 +129,7 @@ class user_app_callback_class(app_callback_class):
 
     def draw_detection_boxes(self, detections, width, height):
         if self.current_frame is not None and SHOW_DETECTION_BOXES:
-            PADDING = 5  # Pixels to add around each box
+            PADDING = 8  # Update padding to 8 pixels
             for detection in detections:
                 bbox = detection.get_bbox()
                 # Calculate padded coordinates, ensuring they stay within frame bounds
