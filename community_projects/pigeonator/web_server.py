@@ -121,6 +121,15 @@ def list_dates():
     dates.sort(reverse=True)  # Newest first
     return jsonify(dates)
 
+@app.route('/api/cpu_temperature')  # Changed from '/api/temperature'
+def get_cpu_temperature():  # Also renamed function for consistency
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp = float(f.read().strip()) / 1000.0  # Convert millicelsius to celsius
+        return jsonify({'temperature': round(temp, 1)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')

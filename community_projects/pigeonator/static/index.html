@@ -8,6 +8,7 @@
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
 </head>
 <body>
+    <div class="temperature-display" id="temperatureDisplay">CPU: --°C</div>
     <div class="split-container">
         <div class="left-panel">
             <div class="metadata-list" id="metadataList"></div>
@@ -456,6 +457,23 @@
             })
             .catch(error => console.error('Error updating pigeon label:', error));
         }
+
+        function updateTemperature() {
+            fetch('/api/cpu_temperature')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.temperature) {
+                        document.getElementById('temperatureDisplay').textContent = 
+                            `CPU: ${data.temperature}°C`;
+                    }
+                })
+                .catch(error => console.error('Error fetching temperature:', error));
+        }
+
+        // Update temperature every 60 seconds
+        setInterval(updateTemperature, 60000);  // Changed from 5000 to 60000 ms
+        // Initial temperature update
+        updateTemperature();
 
         // Initial setup
         async function initialize() {
