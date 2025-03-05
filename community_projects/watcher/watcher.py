@@ -129,12 +129,19 @@ class user_app_callback_class(app_callback_class):
 
     def draw_detection_boxes(self, detections, width, height):
         if self.current_frame is not None and SHOW_DETECTION_BOXES:
+            PADDING = 5  # Pixels to add around each box
             for detection in detections:
                 bbox = detection.get_bbox()
+                # Calculate padded coordinates, ensuring they stay within frame bounds
+                x_min = max(0, int(bbox.xmin() * width) - PADDING)
+                y_min = max(0, int(bbox.ymin() * height) - PADDING)
+                x_max = min(width, int(bbox.xmax() * width) + PADDING)
+                y_max = min(height, int(bbox.ymax() * height) + PADDING)
+                
                 cv2.rectangle(self.current_frame, 
-                              (int(bbox.xmin() * width), int(bbox.ymin() * height)), 
-                              (int(bbox.xmax() * width), int(bbox.ymax() * height)), 
-                              (0, 0, 255), 1)
+                            (x_min, y_min),
+                            (x_max, y_max),
+                            (0, 0, 255), 1)
 
     def stop_video_recording(self, final_filename):
         if self.video_writer is not None:
