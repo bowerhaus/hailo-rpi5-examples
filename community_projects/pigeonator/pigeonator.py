@@ -131,12 +131,19 @@ class user_app_callback_class(app_callback_class):
 
     def draw_detection_boxes(self, detections, width, height):
         if self.current_frame is not None and SHOW_DETECTION_BOXES:
+            PADDING = 8  # Update padding to 8 pixels
             for detection in detections:
                 bbox = detection.get_bbox()
+                # Calculate padded coordinates, ensuring they stay within frame bounds
+                x_min = max(0, int(bbox.xmin() * width) - PADDING)
+                y_min = max(0, int(bbox.ymin() * height) - PADDING)
+                x_max = min(width, int(bbox.xmax() * width) + PADDING)
+                y_max = min(height, int(bbox.ymax() * height) + PADDING)
+                
                 cv2.rectangle(self.current_frame, 
-                              (int(bbox.xmin() * width), int(bbox.ymin() * height)), 
-                              (int(bbox.xmax() * width), int(bbox.ymax() * height)), 
-                              (0, 0, 255), 1)
+                            (x_min, y_min),
+                            (x_max, y_max),
+                            (0, 0, 255), 1)
 
     def stop_video_recording(self, final_filename):
         if self.video_writer is not None:
@@ -148,10 +155,10 @@ class user_app_callback_class(app_callback_class):
     def get_average_detection_instance_count(self):
         if not self.detection_counts:
             return 0
-        detection_counts_np = np.array(self.detection_counts)
+        detection_counts = np.array(self.detection_counts)
         window_size = FRAME_RATE
-        if len(detection_counts_np) >= window_size:
-            moving_averages = np.convolve(detection_counts_np, np.ones(window_size)/window_size, mode='valid')
+        if len(detection_counts) >= window_size:
+            moving_averages = np.convolve(detection_counts, np.ones(window_size)/window_size, mode='valid')
             return moving_averages.max()
         else:
             return np.mean(detection_counts)
