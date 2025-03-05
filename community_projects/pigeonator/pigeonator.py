@@ -181,6 +181,9 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(CLASS_ALERT, 0)
 
+        # NEW: Record maximum detection confidence when tracking starts
+        self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
+
     def active_tracking(self, class_detections):
         # Update total detection instances and active detection count for later averaging
         detection_instance_count = len(class_detections)
@@ -265,13 +268,23 @@ class user_app_callback_class(app_callback_class):
             cv2.imwrite(self.image_filename, self.save_frame)
             logger.info(f"Image saved as {self.image_filename}")
 
+        # NEW: Compute event duration in seconds from active_timestamp.
+        # Append "000" to recover full microsecond format if needed.
+        try:
+            event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
+        except Exception:
+            event_start = datetime.datetime.now()
+        event_seconds = (datetime.datetime.now() - event_start).total_seconds()
+
         # Create metadata dictionary
         metadata = {
             "filename": root_filename,
             "class": CLASS_TO_TRACK,
+            "initial_confidence": self.initial_max_confidence,  # NEW: Add initial_max_confidence to metadata.
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
+            "event_seconds": event_seconds,  # NEW: Added event duration in seconds.
             "reviewed": False  # Add reviewed field, initially false
         }
 
