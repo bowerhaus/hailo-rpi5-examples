@@ -119,6 +119,15 @@ def get_clock_image():
     img_io.seek(0)
     return send_file(img_io, mimetype='image/png')
 
+@app.route('/api/cpu_temperature')
+def get_cpu_temp():
+    try:
+        temp = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
+        temp = float(temp.replace("temp=", "").replace("'C\n", ""))
+        return jsonify({"cpu_temp": temp})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/')
 def home():
     return send_from_directory('static', 'home.html')
