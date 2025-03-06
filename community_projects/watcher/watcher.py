@@ -88,7 +88,6 @@ class user_app_callback_class(app_callback_class):
         self.total_detection_instances = 0
         self.active_detection_count = 0
         self.detection_counts = []
-        self.max_mean_detection_count = 0
 
         # Variables for computing moving average of velocity
         self.avg_velocity = Point2D(0.0, 0.0)
@@ -114,6 +113,13 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
+        self.video_frame_count = 0
+        self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # NEW: Limit video duration in seconds
+        self.video_start_time = None
+        self.video_truncated = False  # NEW: Flag to log truncation once
+        self.app = None  # Store reference to app instance
+
+
     def on_eos(self):
         if self.is_active_tracking:
             self.stop_active_tracking()
@@ -122,6 +128,7 @@ class user_app_callback_class(app_callback_class):
         self.video_filename = video_filename.replace('.mp4', '.m4v')  # Use .m4v extension initially
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
+        self.video_start_time = datetime.datetime.now()  # Record start time
 
     def write_video_frame(self, frame):
         if self.video_writer is not None and self.current_frame is not None:
@@ -160,13 +167,13 @@ class user_app_callback_class(app_callback_class):
     def get_average_detection_instance_count(self):
         if not self.detection_counts:
             return 0
-        detection_counts_np = np.array(self.detection_counts)
+        detection_counts = np.array(self.detection_counts)
         window_size = FRAME_RATE
-        if len(detection_counts_np) >= window_size:
-            moving_averages = np.convolve(detection_counts_np, np.ones(window_size)/window_size, mode='valid')
+        if len(detection_counts) >= window_size:
+            moving_averages = np.convolve(detection_counts, np.ones(window_size)/window_size, mode='valid')
             return moving_averages.max()
         else:
-            return np.mean(detection_counts_np)
+            return np.mean(detection_counts)
 
     def start_active_tracking(self, class_detections):
         self.is_active_tracking = True
@@ -209,8 +216,14 @@ class user_app_callback_class(app_callback_class):
                 self.save_frame = self.current_frame
 
         # If a frame is available, write the frame to the video
-        if self.current_frame is not None:
-            self.write_video_frame(self.current_frame)
+        if self.current_frame is not None and self.video_writer is not None and self.video_start_time:
+            elapsed = (datetime.datetime.now() - self.video_start_time).total_seconds()
+            if elapsed < self.max_video_seconds:
+                self.write_video_frame(self.current_frame)
+            else:
+                if not self.video_truncated:
+                    logger.info(f"Video truncated after {self.max_video_seconds} seconds.")
+                    self.video_truncated = True
 
         # Update moving average of velocity
         if self.object_centroid is not None and self.previous_centroid is not None:
@@ -285,13 +298,29 @@ class user_app_callback_class(app_callback_class):
             cv2.imwrite(self.image_filename, self.save_frame)
             logger.info(f"Image saved as {self.image_filename}")
 
+        # Compute event duration in seconds from active_timestamp.
+        # Append "000" to recover full microsecond format if needed.
+        try:
+            event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
+        except Exception:
+            event_start = datetime.datetime.now()
+        event_seconds = (datetime.datetime.now() - event_start).total_seconds()
+
+        # Extract model name from HEF path
+        model_name = "unknown"
+        if self.app and hasattr(self.app, 'hef_path'):
+            model_name = os.path.splitext(os.path.basename(self.app.hef_path))[0]
+
         # Create metadata dictionary
         metadata = {
             "filename": root_filename,
             "class": CLASS_TO_TRACK,
+            "initial_confidence": round(self.initial_max_confidence, 2),  # Round to 2 decimal places
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
+            "event_seconds": event_seconds,
+            "video_truncated": self.video_truncated,  # Add truncation status to metadata
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
             "label": estimated_label,
@@ -485,4 +514,5 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     user_data.daytime_only = config.get("DAYTIME_ONLY", False)
     app = GStreamerWatcherApp(app_callback, user_data)
+    user_data.app = app  # Store app reference in user_data
     app.run()
