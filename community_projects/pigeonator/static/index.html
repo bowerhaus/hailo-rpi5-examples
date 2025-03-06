@@ -37,6 +37,7 @@
                 <div class="center-buttons">
                     <button class="pigeon-button yes" onclick="setPigeonLabel('pigeon')">PIGEON</button>
                     <button class="pigeon-button no" onclick="setPigeonLabel(null)">NOT PIGEON</button>
+                    <button class="tag-button" onclick="toggleTagged()">Tag</button>
                 </div>
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
@@ -246,8 +247,17 @@
                                     item.classList.add('selected');
                                 }
                                 
-                                // Show the filename without .json extension
+                                // Set filename text
                                 item.textContent = file.replace('.json', '');
+                                
+                                // If tagged, append a Unicode star as a span element
+                                if (json && json.tagged) {
+                                    const starSpan = document.createElement('span');
+                                    starSpan.className = 'star-icon';
+                                    starSpan.textContent = '⭐';
+                                    item.appendChild(starSpan);
+                                }
+                                
                                 item.setAttribute('data-filename', file);
                                 item.onclick = (e) => {
                                     e.stopPropagation();
@@ -327,9 +337,12 @@
                 .then(response => response.json())
                 .then(json => {
                     displayJson(json);
-                    // Update button state
-                    const button = document.getElementById('reviewButton');
-                    button.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
+                    // Update review button state
+                    const reviewButton = document.getElementById('reviewButton');
+                    reviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
+                    // Update tag button state
+                    const tagButton = document.querySelector('.tag-button');
+                    tagButton.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
                 });
             
             const baseFilename = filename.replace('.json', '');
@@ -456,6 +469,56 @@
                 console.log('Pigeon label updated successfully');
             })
             .catch(error => console.error('Error updating pigeon label:', error));
+        }
+
+        function toggleTagged() {
+            if (!selectedItem || !currentJson) return;
+
+            // Toggle the tagged state and set reviewed to true
+            currentJson.tagged = !currentJson.tagged;
+            currentJson.reviewed = true;
+
+            // Update display
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update review and tag button texts
+            const reviewButton = document.getElementById('reviewButton');
+            reviewButton.innerHTML = 'Reviewed ✓';
+            const tagButton = document.querySelector('.tag-button');
+            tagButton.innerHTML = `Tag${currentJson.tagged ? ' ✓' : ''}`;
+            
+            // Update star icon in the selected list item
+            const listItem = document.querySelector(`[data-filename="${selectedItem}"]`);
+            if (listItem) {
+                const existingStar = listItem.querySelector('.star-icon');
+                if (currentJson.tagged) {
+                    if (!existingStar) {
+                        const starSpan = document.createElement('span');
+                        starSpan.className = 'star-icon';
+                        starSpan.textContent = '⭐';
+                        listItem.appendChild(starSpan);
+                    }
+                } else {
+                    if (existingStar) {
+                        existingStar.remove();
+                    }
+                }
+            }
+            
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Tag state updated successfully');
+            })
+            .catch(error => console.error('Error updating tag state:', error));
         }
 
         function updateTemperature() {
