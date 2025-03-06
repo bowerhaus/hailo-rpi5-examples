@@ -163,6 +163,7 @@ class user_app_callback_class(app_callback_class):
         self.is_active_tracking = True
         self.max_instances = len(class_detections)
         self.start_centroid = self.object_centroid
+        self.video_truncated = False
         
         self.save_frame = self.current_frame
         self.active_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -294,7 +295,7 @@ class user_app_callback_class(app_callback_class):
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
-            "event_seconds": event_seconds,
+            "event_seconds": round(event_seconds, 1),  # Round to 1 decimal place
             "video_truncated": self.video_truncated,  # Add truncation status to metadata
             "reviewed": False  # Add reviewed field, initially false
         }
