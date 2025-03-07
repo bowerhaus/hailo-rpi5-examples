@@ -15,3 +15,6 @@ clock*.png
 
 # Config files
 config.json
+
+#Certificates
+privekey.pem
