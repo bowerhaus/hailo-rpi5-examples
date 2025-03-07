@@ -8,6 +8,7 @@ import tempfile
 from io import BytesIO
 from clock import Clock
 import jwt
+import hashlib  # New import for password hashing
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -23,6 +24,9 @@ def load_users():
 def save_users(users):
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f, indent=2)
+
+def hash_password(password):
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
 def get_date_param():
     date = request.args.get('date')
@@ -167,7 +171,8 @@ def login():
     password = data.get('password')
     
     users = load_users()
-    if username in users and users[username] == password:
+    # Compare stored hash with hash of provided password
+    if username in users and users[username] == hash_password(password):
         token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
         response = jsonify({'token': token})
         response.set_cookie('token', token)
@@ -176,6 +181,7 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/api/register', methods=['POST'])
+@token_required  # registration endpoint now requires authentication
 def register():
     data = request.get_json()
     username = data.get('username')
@@ -185,13 +191,16 @@ def register():
     if username in users:
         return jsonify({'error': 'User already exists'}), 400
     
-    users[username] = password
+    # Store the hashed password instead of plain text
+    users[username] = hash_password(password)
     save_users(users)
     return jsonify({'success': True})
 
 @app.route('/login')
 def login_page():
-    return send_from_directory('static', 'login.html')
+    response = send_from_directory('static', 'login.html')
+    response.delete_cookie('token')  # Logout: remove authentication cookie when navigating to login page
+    return response
 
 @app.route('/')
 @token_required
