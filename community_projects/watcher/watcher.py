@@ -507,8 +507,15 @@ if __name__ == "__main__":
     tts.save(HELLO) 
     playsound(HELLO, 0)
     
-    # Start web server first.
-    web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
+    # Start the web server in a separate thread   
+    web_server_thread = threading.Thread(
+        target=web_app.run, 
+        kwargs={
+            'host': '0.0.0.0', 
+            'port': 5000,
+            'ssl_context': ('certificate/cert.pem', 'certificate/privkey.pem')
+        }
+    )
     web_server_thread.daemon = True
     web_server_thread.start()
     
