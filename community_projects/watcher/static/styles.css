@@ -372,3 +372,22 @@ body {
     color: #dc3545;
     margin-top: 10px;
 }
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.register-button {
+    background-color: #ff8c00;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.register-button:hover {
+    background-color: #e67e00;
+}

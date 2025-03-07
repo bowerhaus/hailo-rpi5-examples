@@ -12,6 +12,17 @@ import jwt
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
 SECRET_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQxMzAzNTE0LCJleHAiOjE3NDEzMDcxMTR9.WSL53OdeTIlC1HT44_ZocGUTZf-nTm-GduDIKh-FEzo'
+USERS_FILE = 'users.json'
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_users(users):
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
 
 def get_date_param():
     date = request.args.get('date')
@@ -155,13 +166,28 @@ def login():
     username = data.get('username')
     password = data.get('password')
     
-    if username == 'bower' and password == 'R0oshARy':
+    users = load_users()
+    if username in users and users[username] == password:
         token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
         response = jsonify({'token': token})
         response.set_cookie('token', token)
         return response
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    users = load_users()
+    if username in users:
+        return jsonify({'error': 'User already exists'}), 400
+    
+    users[username] = password
+    save_users(users)
+    return jsonify({'success': True})
 
 @app.route('/login')
 def login_page():

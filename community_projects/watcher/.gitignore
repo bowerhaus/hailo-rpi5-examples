@@ -17,4 +17,4 @@ clock*.png
 config.json
 
 #Certificates
-privekey.pem
+privkey.pem
