@@ -173,7 +173,11 @@ def login():
     users = load_users()
     # Compare stored hash with hash of provided password
     if username in users and users[username] == hash_password(password):
-        token = jwt.encode({'username': username}, SECRET_KEY, algorithm='HS256')
+        # Set token to expire after 1 minute using non-deprecated datetime method
+        token = jwt.encode({
+            'username': username,
+            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=12)
+        }, SECRET_KEY, algorithm='HS256')
         response = jsonify({'token': token})
         response.set_cookie('token', token)
         return response

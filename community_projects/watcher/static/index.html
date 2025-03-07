@@ -59,6 +59,30 @@
             </div>
         </div>
     </div>
+    
+    <!-- Updated mobile modal popup for video playback -->
+    <div id="mobileVideoModal" class="mobile-video-modal">
+        <button class="modal-close-btn" onclick="closeMobileModal()">&times;</button>
+        <div class="mobile-video-pane">
+            <video id="mobileVideoPlayer" class="video-js vjs-default-skin" controls preload="auto">
+                <p class="vjs-no-js">To view this video please enable JavaScript.</p>
+            </video>
+            <div class="button-container">
+                <button id="mobile-toggle-reviewed-button" class="toggle-reviewed-button" onclick="toggleReviewed()">Reviewed</button>
+                <div class="direction-buttons-group">
+                    <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
+                    <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
+                    <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                </div>
+                <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
+            </div>
+            <div class="mobile-close-container">
+                <button class="close-button" onclick="closeMobileModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -240,6 +264,9 @@
         let selectedItem = null;
         let currentJson = null;  // Store current JSON data
 
+        let touchStartX = 0;
+        let touchEndX = 0;
+
         function updateMetadataList() {
             console.log('Fetching metadata list for date:', currentDirectory);
             const list = document.getElementById('metadataList');
@@ -361,6 +388,15 @@
             viewer.innerHTML = `{\n${formatJsonObject(json, 2)}\n}`;
         }
 
+        function closeMobileModal() {
+            const modal = document.getElementById('mobileVideoModal');
+            modal.classList.remove('active');
+            const mobileVideoPlayer = videojs('mobileVideoPlayer');
+            mobileVideoPlayer.pause();
+            mobileVideoPlayer.reset();
+        }
+
+        // Modified selectEvent to show JSON on click
         function selectEvent(filename, element) {
             selectedItem = filename;
             document.querySelectorAll('.event-item').forEach(item => 
@@ -372,37 +408,72 @@
                 .then(response => response.json())
                 .then(json => {
                     displayJson(json);
-                    // Update reviewed toggle state based on json.reviewed flag
                     const btn = document.getElementById('toggle-reviewed-button');
+                    const mobileBtn = document.getElementById('mobile-toggle-reviewed-button');
                     if (json.reviewed) {
                         btn.classList.add('reviewed');
+                        mobileBtn.classList.add('reviewed');
                         btn.innerHTML = "Reviewed ✓";
+                        mobileBtn.innerHTML = "Reviewed ✓";
                     } else {
                         btn.classList.remove('reviewed');
+                        mobileBtn.classList.remove('reviewed');
                         btn.innerHTML = "Reviewed";
+                        mobileBtn.innerHTML = "Reviewed";
                     }
                 });
-            
+
             const baseFilename = filename.replace('.json', '');
             const videoFilename = `/media/${baseFilename}.mp4`;
-            
-            const videoPlayer = videojs('videoPlayer');
-            videoPlayer.pause();
-            videoPlayer.src({
-                src: videoFilename,
-                type: 'video/mp4'
-            });
-            videoPlayer.load();
 
-            // Check if video can play
-            videoPlayer.on('canplay', function() {
-                videoPlayer.play();
-            });
+            if (window.innerWidth < 768) {
+                // Mobile: load video into modal popup
+                const modal = document.getElementById('mobileVideoModal');
+                modal.classList.add('active');
+                const mobileVideoPlayer = videojs('mobileVideoPlayer');
+                mobileVideoPlayer.pause();
+                mobileVideoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                mobileVideoPlayer.load();
+                
+                // Setup handlers for fullscreen behavior
+                mobileVideoPlayer.on('play', function() {
+                    if (!mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.requestFullscreen();
+                    }
+                });
+                
+                mobileVideoPlayer.on('pause', function() {
+                    if (mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.exitFullscreen();
+                    }
+                });
 
-            // Handle error if video cannot be loaded
-            videoPlayer.on('error', function(e) {
-                console.error('Video error:', videoPlayer.error());
-            });
+                mobileVideoPlayer.on('canplay', function() {
+                    mobileVideoPlayer.play();
+                });
+                
+                mobileVideoPlayer.on('error', function(e) {
+                    console.error('Mobile video error:', mobileVideoPlayer.error());
+                });
+            } else {
+                // Desktop: use existing video player
+                const videoPlayer = videojs('videoPlayer');
+                videoPlayer.pause();
+                videoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                videoPlayer.load();
+                videoPlayer.on('canplay', function() {
+                    videoPlayer.play();
+                });
+                videoPlayer.on('error', function(e) {
+                    console.error('Video error:', videoPlayer.error());
+                });
+            }
         }
 
         function showCurrentImage() {
@@ -474,6 +545,7 @@
             .then(response => {
                 if (!response.ok) throw new Error('Failed to update');
                 console.log('JSON updated successfully');
+                closeMobileModal(); // Close the modal after successful update
             })
             .catch(error => console.error('Error updating JSON:', error));
         }
@@ -490,26 +562,32 @@
                 console.log('Files deleted successfully');
                 updateMetadataList();
                 clearSelection();
+                closeMobileModal(); // Close the modal after successful deletion
             })
             .catch(error => console.error('Error deleting files:', error));
         }
 
         function toggleReviewed() {
             if (!selectedItem || !currentJson) return;
-            // Toggle the reviewed flag
             currentJson.reviewed = !currentJson.reviewed;
-            // Update JSON display and list item
             displayJson(currentJson);
             updateSingleListItem(selectedItem, currentJson);
-            // Update button appearance and text
-            const btn = document.getElementById('toggle-reviewed-button');
+            
+            // Update both desktop and mobile button states
+            const desktopBtn = document.getElementById('toggle-reviewed-button');
+            const mobileBtn = document.getElementById('mobile-toggle-reviewed-button');
             if (currentJson.reviewed) {
-                btn.classList.add('reviewed');
-                btn.innerHTML = "Reviewed ✓";
+                desktopBtn.classList.add('reviewed');
+                mobileBtn.classList.add('reviewed');
+                desktopBtn.innerHTML = "Reviewed ✓";
+                mobileBtn.innerHTML = "Reviewed ✓";
             } else {
-                btn.classList.remove('reviewed');
-                btn.innerHTML = "Reviewed";
+                desktopBtn.classList.remove('reviewed');
+                mobileBtn.classList.remove('reviewed');
+                desktopBtn.innerHTML = "Reviewed";
+                mobileBtn.innerHTML = "Reviewed";
             }
+            
             // Send updated JSON to server
             fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
                 method: 'POST',
@@ -519,6 +597,7 @@
             .then(response => {
                 if (!response.ok) throw new Error('Failed to update');
                 console.log('Reviewed flag toggled successfully');
+                closeMobileModal(); // Close the modal after successful toggle
             })
             .catch(error => console.error('Error updating reviewed flag:', error));
         }
