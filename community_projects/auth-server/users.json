@@ -1,0 +1,12 @@
+[
+  {
+    "username": "testuser",
+    "email": "testuser@example.com",
+    "password": "$2b$10$wd52AEQJnZfT3AL2lBHCguxk0XwqQfbTUpwe/zRt1Trj/Bo/WKtGW"
+  },
+  {
+    "username": "bower",
+    "email": "bower@object-arts.com",
+    "password": "$2b$10$dnCPAp9eTJ5PUfSGtJc/UOKrQx3E02505acGI6H.B2hEBQGWRzTvW"
+  }
+]
