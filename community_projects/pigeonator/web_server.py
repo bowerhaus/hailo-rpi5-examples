@@ -3,8 +3,13 @@ import os
 import datetime
 import re
 import json
-import subprocess  # Import the subprocess module
-import tempfile  # Import the tempfile module
+import subprocess
+import tempfile
+import logging
+
+# Configure logging to only show errors
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger('flask').setLevel(logging.ERROR)
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -56,8 +61,9 @@ def update_json(filename):
     if not filename.endswith('.json'):
         return jsonify({'error': 'Invalid file type'}), 400
         
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    # Extract date from request parameters
+    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     filepath = os.path.join(directory, filename)
     
     if not os.path.exists(filepath):
@@ -73,8 +79,9 @@ def update_json(filename):
 
 @app.route('/api/delete/<base_filename>', methods=['DELETE'])
 def delete_files(base_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
+    # Extract date from request parameters
+    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
+    directory = os.path.join(OUTPUT_DIRECTORY, date)
     
     if not os.path.exists(directory):
         return jsonify({'error': 'Directory not found'}), 404
@@ -113,6 +120,15 @@ def list_dates():
     dates = [d for d in os.listdir(OUTPUT_DIRECTORY) if os.path.isdir(os.path.join(OUTPUT_DIRECTORY, d))]
     dates.sort(reverse=True)  # Newest first
     return jsonify(dates)
+
+@app.route('/api/cpu_temperature')  # Changed from '/api/temperature'
+def get_cpu_temperature():  # Also renamed function for consistency
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp = float(f.read().strip()) / 1000.0  # Convert millicelsius to celsius
+        return jsonify({'temperature': round(temp, 1)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def index():

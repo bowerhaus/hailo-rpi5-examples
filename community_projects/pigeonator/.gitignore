@@ -5,6 +5,7 @@ gstreamer_helper_pipelines.py
 output/
 input/
 logs/
+models/*.hef
 
 # Temporary files   
 classalert.mp3

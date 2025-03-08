@@ -16,7 +16,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/pigeonator.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--input", "rpi"],
+            //"args": ["--use-frame", "--input", "rpi"],
+            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"],
+            //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "output/20250304/20250304_091542_182_pigeon_x1.mp4"],
+            //"args": ["--use-frame", "--hef-path", "models/Pigeonator-v1-yolov8s-2.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "output/20250228/20250228_141713_545_bird_x1.mp4"],
+        
             //"args": ["--use-frame", "--input", "input/helen_out_4.mp4", "--arch", "hailo8l"],
             //"args": ["--input", "output/20250118/20250118_115526_612_dog_x3_15_converted.mp4"],
             //"args": ["--input", "output/20250118/20250118_104320_177_dog_x3_74_converted.mp4"],

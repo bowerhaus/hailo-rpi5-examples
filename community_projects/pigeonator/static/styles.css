@@ -100,48 +100,59 @@ body {
 .button-container {
     padding: 10px;
     display: flex;
-    justify-content: space-between; /* Keep space-between */
-    align-items: center; /* Vertically center items */
-    background: #1a1a1a;
-}
-
-.direction-buttons-group {
-    display: flex;
-    justify-content: center; /* Center the group horizontally */
+    justify-content: space-between;
     align-items: center;
+    background: #1a1a1a;
     gap: 10px;
-    flex-grow: 1; /* Allow the group to take up remaining space */
 }
 
-.direction-button {
+.center-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.pigeon-button {
     padding: 8px 16px;
     border: none;
     border-radius: 4px;
-    background: #007bff;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    min-width: 120px;
+}
+
+.pigeon-button.yes {
+    background: #28a745;
+}
+
+.pigeon-button.yes:hover {
+    background: #218838;
+}
+
+.pigeon-button.no {
+    background: #dc3545;
+}
+
+.pigeon-button.no:hover {
+    background: #c82333;
+}
+
+.review-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #ff8c00;
     color: white;
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.2s;
 }
 
-.direction-button:hover {
-    background: #0056b3;
-}
-
-.direction-button.helen-out {
-    background: #dc3545;
-}
-
-.direction-button.helen-out:hover {
-    background: #c82333;
-}
-
-.direction-button.helen-back {
-    background: #28a745;
-}
-
-.direction-button.helen-back:hover {
-    background: #218838;
+.review-button:hover {
+    background: #e67e00;
 }
 
 .arrow-button {
@@ -159,56 +170,67 @@ body {
     background: #444;
 }
 
+.tag-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #007bff;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    min-width: 80px;
+}
+
+.tag-button:hover {
+    background: #0056b3;
+}
+
 .event-item {
     padding: 10px;
     cursor: pointer;
     border-bottom: 1px solid #ddd;
     transition: all 0.2s;
+    color: #000;  /* default black text */
+    font-weight: normal;  /* default non-bold */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .event-item:hover {
     background-color: #e9e9e9;
 }
 
+/* Text colors for different states */
+.event-item.pigeon {
+    background-color: #fff;  /* white background */
+    color: #228B22;  /* forest green text */
+    font-weight: bold;
+}
+
+.event-item.reviewed:not(.pigeon) {
+    color: #0066cc;  /* blue */
+    font-weight: bold;
+}
+
+/* Selection styles - white text with background matching original text color */
 .event-item.selected {
+    color: white;  /* ensure all selected items have white text */
+}
+
+.event-item.pigeon.selected {
+    background-color: #228B22;  /* forest green background */
+}
+
+.event-item.reviewed.selected:not(.pigeon) {
+    background-color: #0066cc;  /* blue background */
+    color: white;  /* ensure white text for contrast */
+}
+
+/* Default selection color if no other state */
+.event-item.selected:not(.pigeon):not(.reviewed) {
     background-color: #007bff;
-    color: white;
-}
-
-.event-item.helen-out {
-    color: #dc3545;
-    font-weight: bold;
-}
-
-.event-item.helen-back {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.event-item.helen-out.selected {
-    background-color: #dc3545;
-    color: white;
-}
-
-.event-item.helen-back.selected {
-    background-color: #28a745;
-    color: white;
-}
-
-.event-item.reviewed {
-    color: #0066cc;
-    font-weight: bold;
-}
-
-.event-item.reviewed.selected {
-    background-color: #0066cc;
-    color: white;
-}
-
-/* Make sure reviewed class doesn't override helen classes */
-.event-item.helen-out,
-.event-item.helen-back {
-    /* These styles will take precedence over .reviewed */
 }
 
 .current-image {
@@ -279,4 +301,24 @@ body {
     gap: 10px;
     padding: 10px 0;
     background: #1a1a1a;
+}
+
+.temperature-display {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.star-icon {
+    font-size: 14px;       /* reduced size */
+    color: gold;
+    width: 20px;           /* fixed width */
+    text-align: right;
+    display: inline-block; /* ensures fixed width is enforced */
 }

@@ -8,6 +8,7 @@
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
 </head>
 <body>
+    <div class="temperature-display" id="temperatureDisplay">CPU: --°C</div>
     <div class="split-container">
         <div class="left-panel">
             <div class="metadata-list" id="metadataList"></div>
@@ -32,12 +33,11 @@
                 <div class="time-indicator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
-                <div class="direction-buttons-group">
-                    <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
-                    <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
-                    <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
-                    <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
-                    <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                <button class="review-button" id="reviewButton" onclick="toggleReviewState()">Reviewed</button>
+                <div class="center-buttons">
+                    <button class="pigeon-button yes" onclick="setPigeonLabel('pigeon')">PIGEON</button>
+                    <button class="pigeon-button no" onclick="setPigeonLabel(null)">NOT PIGEON</button>
+                    <button class="tag-button" onclick="toggleTagged()">Tag</button>
                 </div>
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
@@ -236,13 +236,10 @@
                                 const item = document.createElement('div');
                                 item.className = 'event-item';
                                 
-                                // Add helen-out or helen-back class based on label
-                                if (json && json.label === 'HELEN_OUT') {
-                                    item.classList.add('helen-out');
-                                } else if (json && json.label === 'HELEN_BACK') {
-                                    item.classList.add('helen-back');
+                                // Add appropriate class based on label
+                                if (json && json.label === 'pigeon') {
+                                    item.classList.add('pigeon');
                                 } else if (json && json.reviewed === true) {
-                                    // Only add reviewed class if no helen-specific class exists
                                     item.classList.add('reviewed');
                                 }
                                 
@@ -250,8 +247,17 @@
                                     item.classList.add('selected');
                                 }
                                 
-                                // Show the filename without .json extension
+                                // Set filename text
                                 item.textContent = file.replace('.json', '');
+                                
+                                // If tagged, append a Unicode star as a span element
+                                if (json && json.tagged) {
+                                    const starSpan = document.createElement('span');
+                                    starSpan.className = 'star-icon';
+                                    starSpan.textContent = '⭐';
+                                    item.appendChild(starSpan);
+                                }
+                                
                                 item.setAttribute('data-filename', file);
                                 item.onclick = (e) => {
                                     e.stopPropagation();
@@ -285,6 +291,9 @@
             }
             
             document.getElementById('timeIndicator').textContent = '';
+
+            const button = document.getElementById('reviewButton');
+            button.innerHTML = 'Reviewed';
         }
 
         function formatJsonValue(value, indent) {
@@ -326,7 +335,15 @@
             // Load and display JSON content
             fetch(`/media/${filename}`)
                 .then(response => response.json())
-                .then(json => displayJson(json));
+                .then(json => {
+                    displayJson(json);
+                    // Update review button state
+                    const reviewButton = document.getElementById('reviewButton');
+                    reviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
+                    // Update tag button state
+                    const tagButton = document.querySelector('.tag-button');
+                    tagButton.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
+                });
             
             const baseFilename = filename.replace('.json', '');
             const videoFilename = `/media/${baseFilename}.mp4`;
@@ -363,58 +380,22 @@
             const item = document.querySelector(`[data-filename="${filename}"]`);
             if (!item) return;
 
-            // Remove any existing helen-out/helen-back classes
-            item.classList.remove('helen-out', 'helen-back', 'reviewed');
+            // Remove any existing special classes
+            item.classList.remove('reviewed', 'pigeon');
             
             // Add appropriate class based on new label
-            if (json.label === 'HELEN_OUT') {
-                item.classList.add('helen-out');
-            } else if (json.label === 'HELEN_BACK') {
-                item.classList.add('helen-back');
+            if (json.label === 'pigeon') {
+                item.classList.add('pigeon');
             } else if (json.reviewed === true) {
                 item.classList.add('reviewed');
             }
-        }
-
-        function updateDirection(newDirection) {
-            if (!selectedItem || !currentJson) return;
-
-            // Set named_direction to basic direction
-            if (newDirection.startsWith('HELEN')) {
-                currentJson.named_direction = newDirection.split(' ')[1]; // Gets 'OUT' or 'BACK'
-                currentJson.label = newDirection.replace(' ', '_'); // Sets 'HELEN_OUT' or 'HELEN_BACK'
-            } else {
-                currentJson.named_direction = newDirection; // 'OUT', 'BACK', or 'OTHER'
-                currentJson.label = null;
-            }
-            
-            // Mark as reviewed when direction is updated
-            currentJson.reviewed = true;
-
-            // Update display
-            displayJson(currentJson);
-            updateSingleListItem(selectedItem, currentJson);
-
-            // Send updated JSON to server
-            fetch(`/api/update/${selectedItem}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(currentJson)
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to update');
-                console.log('JSON updated successfully');
-            })
-            .catch(error => console.error('Error updating JSON:', error));
         }
 
         function deleteCurrentEntry() {
             if (!selectedItem) return;
 
             const baseFilename = selectedItem.replace('.json', '');
-            fetch(`/api/delete/${baseFilename}`, {
+            fetch(`/api/delete/${baseFilename}?date=${currentDirectory}`, {
                 method: 'DELETE'
             })
             .then(response => {
@@ -425,6 +406,137 @@
             })
             .catch(error => console.error('Error deleting files:', error));
         }
+
+        function toggleReviewState() {
+            if (!selectedItem || !currentJson) return;
+
+            // Toggle the reviewed state
+            currentJson.reviewed = !currentJson.reviewed;
+
+            // If marking as reviewed and no label exists, set to null
+            if (currentJson.reviewed && !currentJson.label) {
+                currentJson.label = null;
+            }
+
+            // Update the button text
+            const button = document.getElementById('reviewButton');
+            button.innerHTML = `Reviewed${currentJson.reviewed ? ' ✓' : ''}`;
+
+            // Update display
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Review state updated successfully');
+            })
+            .catch(error => console.error('Error updating review state:', error));
+        }
+
+        function setPigeonLabel(label) {
+            if (!selectedItem || !currentJson) return;
+
+            // Set the label and mark as reviewed
+            currentJson.label = label;
+            currentJson.reviewed = true;
+
+            // Update displays
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update review button
+            const reviewButton = document.getElementById('reviewButton');
+            reviewButton.innerHTML = 'Reviewed ✓';
+
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Pigeon label updated successfully');
+            })
+            .catch(error => console.error('Error updating pigeon label:', error));
+        }
+
+        function toggleTagged() {
+            if (!selectedItem || !currentJson) return;
+
+            // Toggle the tagged state and set reviewed to true
+            currentJson.tagged = !currentJson.tagged;
+            currentJson.reviewed = true;
+
+            // Update display
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update review and tag button texts
+            const reviewButton = document.getElementById('reviewButton');
+            reviewButton.innerHTML = 'Reviewed ✓';
+            const tagButton = document.querySelector('.tag-button');
+            tagButton.innerHTML = `Tag${currentJson.tagged ? ' ✓' : ''}`;
+            
+            // Update star icon in the selected list item
+            const listItem = document.querySelector(`[data-filename="${selectedItem}"]`);
+            if (listItem) {
+                const existingStar = listItem.querySelector('.star-icon');
+                if (currentJson.tagged) {
+                    if (!existingStar) {
+                        const starSpan = document.createElement('span');
+                        starSpan.className = 'star-icon';
+                        starSpan.textContent = '⭐';
+                        listItem.appendChild(starSpan);
+                    }
+                } else {
+                    if (existingStar) {
+                        existingStar.remove();
+                    }
+                }
+            }
+            
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Tag state updated successfully');
+            })
+            .catch(error => console.error('Error updating tag state:', error));
+        }
+
+        function updateTemperature() {
+            fetch('/api/cpu_temperature')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.temperature) {
+                        document.getElementById('temperatureDisplay').textContent = 
+                            `CPU: ${data.temperature}°C`;
+                    }
+                })
+                .catch(error => console.error('Error fetching temperature:', error));
+        }
+
+        // Update temperature every 60 seconds
+        setInterval(updateTemperature, 60000);  // Changed from 5000 to 60000 ms
+        // Initial temperature update
+        updateTemperature();
 
         // Initial setup
         async function initialize() {

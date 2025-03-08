@@ -88,7 +88,6 @@ class user_app_callback_class(app_callback_class):
         self.total_detection_instances = 0
         self.active_detection_count = 0
         self.detection_counts = []
-        self.max_mean_detection_count = 0
 
         # Variables for computing moving average of velocity
         self.avg_velocity = Point2D(0.0, 0.0)
@@ -114,6 +113,13 @@ class user_app_callback_class(app_callback_class):
         self.width = None
         self.height = None
 
+        self.video_frame_count = 0
+        self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # NEW: Limit video duration in seconds
+        self.video_start_time = None
+        self.video_truncated = False  # NEW: Flag to log truncation once
+        self.app = None  # Store reference to app instance
+
+
     def on_eos(self):
         if self.is_active_tracking:
             self.stop_active_tracking()
@@ -122,6 +128,7 @@ class user_app_callback_class(app_callback_class):
         self.video_filename = video_filename.replace('.mp4', '.m4v')  # Use .m4v extension initially
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Ensure the codec is set for MP4 format
         self.video_writer = cv2.VideoWriter(self.video_filename, fourcc, fps, (width, height))
+        self.video_start_time = datetime.datetime.now()  # Record start time
 
     def write_video_frame(self, frame):
         if self.video_writer is not None and self.current_frame is not None:
@@ -129,12 +136,26 @@ class user_app_callback_class(app_callback_class):
 
     def draw_detection_boxes(self, detections, width, height):
         if self.current_frame is not None and SHOW_DETECTION_BOXES:
+            PADDING = 8  # Update padding to 8 pixels
+            PADDING = 5  # Pixels to add around each box
             for detection in detections:
                 bbox = detection.get_bbox()
+                # Calculate padded coordinates, ensuring they stay within frame bounds
+                x_min = max(0, int(bbox.xmin() * width) - PADDING)
+                y_min = max(0, int(bbox.ymin() * height) - PADDING)
+                x_max = min(width, int(bbox.xmax() * width) + PADDING)
+                y_max = min(height, int(bbox.ymax() * height) + PADDING)
+                
+                # Calculate padded coordinates, ensuring they stay within frame bounds
+                x_min = max(0, int(bbox.xmin() * width) - PADDING)
+                y_min = max(0, int(bbox.ymin() * height) - PADDING)
+                x_max = min(width, int(bbox.xmax() * width) + PADDING)
+                y_max = min(height, int(bbox.ymax() * height) + PADDING)
+                
                 cv2.rectangle(self.current_frame, 
-                              (int(bbox.xmin() * width), int(bbox.ymin() * height)), 
-                              (int(bbox.xmax() * width), int(bbox.ymax() * height)), 
-                              (0, 0, 255), 1)
+                            (x_min, y_min),
+                            (x_max, y_max),
+                            (0, 0, 255), 1)
 
     def stop_video_recording(self, final_filename):
         if self.video_writer is not None:
@@ -146,18 +167,19 @@ class user_app_callback_class(app_callback_class):
     def get_average_detection_instance_count(self):
         if not self.detection_counts:
             return 0
-        detection_counts_np = np.array(self.detection_counts)
+        detection_counts = np.array(self.detection_counts)
         window_size = FRAME_RATE
-        if len(detection_counts_np) >= window_size:
-            moving_averages = np.convolve(detection_counts_np, np.ones(window_size)/window_size, mode='valid')
+        if len(detection_counts) >= window_size:
+            moving_averages = np.convolve(detection_counts, np.ones(window_size)/window_size, mode='valid')
             return moving_averages.max()
         else:
-            return np.mean(detection_counts_np)
+            return np.mean(detection_counts)
 
     def start_active_tracking(self, class_detections):
         self.is_active_tracking = True
         self.max_instances = len(class_detections)
         self.start_centroid = self.object_centroid
+        self.video_truncated = False
         
         self.save_frame = self.current_frame
         self.active_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -180,6 +202,9 @@ class user_app_callback_class(app_callback_class):
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(DOG_ALERT, 0)
 
+        # Record maximum detection confidence when tracking starts
+        self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
+
     def active_tracking(self, class_detections):
         # Update total detection instances and active detection count for later averaging
         detection_instance_count = len(class_detections)
@@ -195,8 +220,14 @@ class user_app_callback_class(app_callback_class):
                 self.save_frame = self.current_frame
 
         # If a frame is available, write the frame to the video
-        if self.current_frame is not None:
-            self.write_video_frame(self.current_frame)
+        if self.current_frame is not None and self.video_writer is not None and self.video_start_time:
+            elapsed = (datetime.datetime.now() - self.video_start_time).total_seconds()
+            if elapsed < self.max_video_seconds:
+                self.write_video_frame(self.current_frame)
+            else:
+                if not self.video_truncated:
+                    logger.info(f"Video truncated after {self.max_video_seconds} seconds.")
+                    self.video_truncated = True
 
         # Update moving average of velocity
         if self.object_centroid is not None and self.previous_centroid is not None:
@@ -271,13 +302,29 @@ class user_app_callback_class(app_callback_class):
             cv2.imwrite(self.image_filename, self.save_frame)
             logger.info(f"Image saved as {self.image_filename}")
 
+        # Compute event duration in seconds from active_timestamp.
+        # Append "000" to recover full microsecond format if needed.
+        try:
+            event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
+        except Exception:
+            event_start = datetime.datetime.now()
+        event_seconds = (datetime.datetime.now() - event_start).total_seconds()
+
+        # Extract model name from HEF path
+        model_name = "unknown"
+        if self.app and hasattr(self.app, 'hef_path'):
+            model_name = os.path.splitext(os.path.basename(self.app.hef_path))[0]
+
         # Create metadata dictionary
         metadata = {
             "filename": root_filename,
             "class": CLASS_TO_TRACK,
+            "initial_confidence": round(self.initial_max_confidence, 2),  # Round to 2 decimal places
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
+            "event_seconds": round(event_seconds, 1),  # Round to 1 decimal place
+            "video_truncated": self.video_truncated,  # Add truncation status to metadata
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
             "label": estimated_label,
@@ -351,9 +398,9 @@ class user_app_callback_class(app_callback_class):
         Returns:
             str: The named direction.
         """
-        if direction >= 10 and direction < 70:
+        if direction >= 25 and direction < 100:
             return "OUT"
-        if direction >= 200 and direction < 260:
+        if direction >= 205 and direction < 280:
             return "BACK"
         return "OTHER"
     
@@ -460,8 +507,15 @@ if __name__ == "__main__":
     tts.save(HELLO) 
     playsound(HELLO, 0)
     
-    # Start web server first.
-    web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
+    # Start the web server in a separate thread   
+    web_server_thread = threading.Thread(
+        target=web_app.run, 
+        kwargs={
+            'host': '0.0.0.0', 
+            'port': 5000,
+            'ssl_context': ('certificate/cert.pem', 'certificate/privkey.pem')
+        }
+    )
     web_server_thread.daemon = True
     web_server_thread.start()
     
@@ -471,4 +525,5 @@ if __name__ == "__main__":
     user_data = user_app_callback_class()
     user_data.daytime_only = config.get("DAYTIME_ONLY", False)
     app = GStreamerWatcherApp(app_callback, user_data)
+    user_data.app = app  # Store app reference in user_data
     app.run()
