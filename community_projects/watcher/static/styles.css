@@ -320,3 +320,275 @@ body {
 .event-item.reviewed.selected {
     color: white !important;
 }
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #333;
+}
+
+.login-box {
+    background-color: #444;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 300px;
+}
+
+.login-box h2 {
+    margin-bottom: 20px;
+    color: white;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-box button:hover {
+    background-color: #0056b3;
+}
+
+.login-box .error {
+    color: #dc3545;
+    margin-top: 10px;
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.register-button {
+    background-color: #ff8c00;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.register-button:hover {
+    background-color: #e67e00;
+}
+
+@media (max-width: 768px) {
+    /* Stack the panels on mobile */
+    .split-container {
+        flex-direction: column;
+    }
+    .left-panel {
+        width: 100%;
+        height: 100vh; /* Take full viewport height */
+        display: flex;
+        flex-direction: column;
+        border-right: none;
+    }
+    .metadata-list {
+        width: 100%;
+        flex: 1; /* Take 50% of the left panel */
+        overflow-y: auto;
+    }
+    .json-viewer {
+        width: 100%;
+        flex: 1; /* Take 50% of the left panel */
+        overflow-y: auto;
+    }
+    .image-viewer {
+        display: none; /* Hide the desktop video container */
+    }
+    /* Hide all splitters in mobile view */
+    .splitter, 
+    .vertical-splitter {
+        display: none;
+    }
+    /* Mobile video popup modal, hidden by default */
+    .mobile-video-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 2000;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .mobile-video-modal.active {
+        display: flex;
+    }
+    .mobile-video-modal video {
+        width: 100%;
+        max-height: 80%;
+    }
+    .mobile-video-modal .button-container {
+        width: 100%;
+        padding: 10px;
+        display: flex;
+        justify-content: space-around;
+    }
+    /* Updated modal styling: The mobile video pane wraps video and button pane */
+    .mobile-video-modal .mobile-video-pane {
+         display: flex;
+         flex-direction: column;
+         justify-content: space-between;
+         width: 100%;
+         height: 100%;
+    }
+    .mobile-video-modal video {
+         width: 100%;
+         flex-grow: 1;
+    }
+    .mobile-video-modal .button-container {
+         width: 100%;
+         padding: 10px;
+         text-align: center;
+         background: #1a1a1a;
+    }
+    .mobile-video-modal .mobile-video-pane {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .mobile-video-modal video {
+        width: 100%;
+        flex: 1;
+        max-height: 50vh;
+    }
+    
+    .mobile-video-modal .button-container {
+        padding: 10px;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .mobile-video-modal .direction-buttons-group {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+        width: 100%;
+    }
+    
+    .mobile-video-modal .direction-button {
+        width: 100%;
+        padding: 12px 8px;
+        font-size: 14px;
+    }
+    
+    .mobile-video-modal .toggle-reviewed-button,
+    .mobile-video-modal .delete-button {
+        width: 100%;
+        padding: 12px 8px;
+    }
+    
+    .mobile-close-container {
+        padding: 10px;
+        background: #1a1a1a;
+        border-top: 1px solid #333;
+    }
+    
+    .mobile-close-container .close-button {
+        width: 100%;
+        padding: 12px;
+        background: #444;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+    .mobile-video-modal .mobile-video-pane {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+    
+    .mobile-video-modal .vjs-tech {
+        height: 50vh !important; /* Force video height */
+        object-fit: contain;
+    }
+    
+    .mobile-video-modal video,
+    .mobile-video-modal .video-js {
+        width: 100%;
+        height: 50vh !important; /* Force container height */
+        position: relative;
+    }
+    
+    .mobile-video-modal .button-container {
+        padding: 10px;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 50vh;
+        overflow-y: auto;
+    }
+    
+    .modal-close-btn {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid white;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2001;
+        padding: 0;
+    }
+
+    .modal-close-btn:hover {
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    .mobile-video-modal .toggle-reviewed-button {
+        width: 100%;
+        padding: 12px 8px;
+        background: #6c757d;
+        transition: background-color 0.2s;
+        z-index: 2001; /* Ensure button is above other elements */
+    }
+    
+    .mobile-video-modal .toggle-reviewed-button.reviewed {
+        background: #ff8c00;
+    }
+    
+    /* Rest of mobile styles remain the same */
+}

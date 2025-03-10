@@ -179,6 +179,7 @@ class user_app_callback_class(app_callback_class):
         self.is_active_tracking = True
         self.max_instances = len(class_detections)
         self.start_centroid = self.object_centroid
+        self.video_truncated = False
         
         self.save_frame = self.current_frame
         self.active_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
@@ -200,6 +201,9 @@ class user_app_callback_class(app_callback_class):
         phrase = f"{CLASS_TO_TRACK.upper()} DETECTED"
         logger.info(f"{phrase} {self.start_centroid} at: {datetime.datetime.now()}")
         playsound(DOG_ALERT, 0)
+
+        # Record maximum detection confidence when tracking starts
+        self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
 
     def active_tracking(self, class_detections):
         # Update total detection instances and active detection count for later averaging
@@ -319,7 +323,7 @@ class user_app_callback_class(app_callback_class):
             "timestamp": self.active_timestamp,
             "max_instances": self.max_instances,
             "average_instances": avg_detection_count,
-            "event_seconds": event_seconds,
+            "event_seconds": round(event_seconds, 1),  # Round to 1 decimal place
             "video_truncated": self.video_truncated,  # Add truncation status to metadata
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
@@ -503,8 +507,15 @@ if __name__ == "__main__":
     tts.save(HELLO) 
     playsound(HELLO, 0)
     
-    # Start web server first.
-    web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
+    # Start the web server in a separate thread   
+    web_server_thread = threading.Thread(
+        target=web_app.run, 
+        kwargs={
+            'host': '0.0.0.0', 
+            'port': 5000,
+            'ssl_context': ('certificate/cert.pem', 'certificate/privkey.pem')
+        }
+    )
     web_server_thread.daemon = True
     web_server_thread.start()
     
