@@ -1,1 +1,1 @@
-**/certificates/* filter=git-crypt diff=git-crypt
+**/certificate/* filter=git-crypt diff=git-crypt
