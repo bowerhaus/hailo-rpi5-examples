@@ -24,6 +24,7 @@ from gstreamer_pigeonator_app import GStreamerPigeonatorApp
 import threading
 from web_server import app as web_app
 from time import sleep
+from deterrent_manager import DeterrentManager  # Import DeterrentManager class
 
 # Load configuration from config.json
 with open('config.json', 'r') as config_file:
@@ -112,6 +113,11 @@ class user_app_callback_class(app_callback_class):
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)  # NEW: Limit video duration in seconds
         self.video_start_time = None
         self.video_truncated = False  # NEW: Flag to log truncation once
+        self.tracking_start_time = None  # NEW: Track when active tracking starts
+
+        # Initialize DeterrentManager
+        self.deterrent_manager = DeterrentManager(config)
+        self.deter_delay_seconds = config.get('DETER_DELAY_SECONDS', 8)  # Get DETER_DELAY_SECONDS from config, default to 8
 
     def on_eos(self):
         if self.is_active_tracking:
@@ -183,6 +189,7 @@ class user_app_callback_class(app_callback_class):
 
         # NEW: Record maximum detection confidence when tracking starts
         self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
+        self.tracking_start_time = datetime.datetime.now()  # NEW: Record tracking start time
 
     def active_tracking(self, class_detections):
         # Update total detection instances and active detection count for later averaging
@@ -207,6 +214,12 @@ class user_app_callback_class(app_callback_class):
                 if not self.video_truncated:
                     logger.info(f"Video truncated after {self.max_video_seconds} seconds.")
                     self.video_truncated = True
+
+        # NEW: Check if the pigeon has been tracked for DETER_DELAY_SECONDS, and if so, call the DeterrentManager to trigger deterrent
+        if self.tracking_start_time:
+            tracking_duration = (datetime.datetime.now() - self.tracking_start_time).total_seconds()
+            if tracking_duration >= self.deter_delay_seconds:
+                self.deterrent_manager.trigger_deterrent()
 
     def convert_video_to_h264(self, video_path):
         """Convert video to H264 format using ffmpeg"""
@@ -302,6 +315,7 @@ class user_app_callback_class(app_callback_class):
         self.previous_centroid = None
         self.detection_counts.clear()
         self.max_mean_detection_count = 0
+        self.deterrent_manager.reset_deterrent_trigger() # Reset watering trigger flag
     
 def app_callback(pad, info, user_data):
     """

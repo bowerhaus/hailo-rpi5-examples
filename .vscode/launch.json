@@ -21,6 +21,7 @@
             "program": "${workspaceFolder}/community_projects//pigeonator/pigeonator.py",
             "console": "integratedTerminal",
             "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
+            // "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "output/20250228/20250228_141713_545_bird_x1.mp4"]
         }
     ]
 }
