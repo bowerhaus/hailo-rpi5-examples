@@ -223,4 +223,4 @@ def review():
     return send_from_directory('static', 'index.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', ssl_context=('certificate/cert.pem', 'certificate/privkey.pem'))
+    app.run(host='0.0.0.0', ssl_context=('certificate/helen-o-matic.pem', 'certificate/helen-o-matic-privkey.pem'))
