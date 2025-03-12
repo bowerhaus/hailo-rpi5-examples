@@ -513,7 +513,7 @@ if __name__ == "__main__":
         kwargs={
             'host': '0.0.0.0', 
             'port': 5000,
-            'ssl_context': ('certificate/cert.pem', 'certificate/privkey.pem')
+            'ssl_context': ('certificate/helen-o-matic.pem', 'certificate/helen-o-matic-privkey.pem')
         }
     )
     web_server_thread.daemon = True
