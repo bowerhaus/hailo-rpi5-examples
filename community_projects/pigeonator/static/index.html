@@ -47,7 +47,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-    <script src="/static/App.js"></script>
     <script>
         // Add current date handling
         let currentDirectory = '';
@@ -94,6 +93,7 @@
             currentDirectory = availableDates[newIndex];
             updateDateDisplay();
             clearSelection();
+            isFirstUpdate = true; // Reset the flag when the date changes
             updateMetadataList();
             setupAutoRefresh();
         }
@@ -201,18 +201,29 @@
         let imageInterval = null;
         let selectedItem = null;
         let currentJson = null;  // Store current JSON data
+        let lastRefreshTimestamp = null;
+        let isFirstUpdate = true;  // Flag to track first update
 
         function updateMetadataList() {
             console.log('Fetching metadata list for date:', currentDirectory);
             const list = document.getElementById('metadataList');
-            list.innerHTML = '';
+            // list.innerHTML = ''; // Remove this line
 
-            fetch(`/api/metadata?date=${currentDirectory}`)
+            // Store the current timestamp before fetching metadata
+            lastRefreshTimestamp = Date.now() / 1000;
+
+            let url = `/api/metadata?date=${currentDirectory}`;
+            if (isFirstUpdate) {
+                url += `&since=0`;
+            } else if (lastRefreshTimestamp) {
+                url += `&since=${lastRefreshTimestamp}`;
+            }
+
+            fetch(url)
                 .then(response => response.json())
                 .then(files => {
-                    const list = document.getElementById('metadataList');
                     const currentSelection = selectedItem;
-                    list.innerHTML = '';
+                    // list.innerHTML = ''; // Remove this line
                     
                     // Add click handler to the list container for deselection
                     list.onclick = function(e) {
@@ -232,7 +243,9 @@
                     // Wait for all JSON data to be fetched
                     Promise.all(promises)
                         .then(results => {
-                            results.forEach(({file, json}) => {
+                            // Iterate in reverse to prepend new items
+                            for (let i = results.length - 1; i >= 0; i--) {
+                                const {file, json} = results[i];
                                 const item = document.createElement('div');
                                 item.className = 'event-item';
                                 
@@ -263,14 +276,18 @@
                                     e.stopPropagation();
                                     selectEvent(file, item);
                                 };
-                                list.appendChild(item);
-                            });
+                                // Prepend the new item to the list
+                                list.insertBefore(item, list.firstChild);
+                            }
                         });
                 })
                 .catch(error => {
                     console.error('Error fetching metadata:', error);
                     const list = document.getElementById('metadataList');
                     list.innerHTML = '<div class="event-item error">Error loading events</div>';
+                })
+                .finally(() => {
+                    isFirstUpdate = false; // Reset the flag after the first update
                 });
         }
 
@@ -401,7 +418,12 @@
             .then(response => {
                 if (!response.ok) throw new Error('Failed to delete');
                 console.log('Files deleted successfully');
-                updateMetadataList();
+
+                // Remove the item from the list
+                const listItem = document.querySelector(`[data-filename="${selectedItem}"]`);
+                if (listItem) {
+                    listItem.remove();
+                }
                 clearSelection();
             })
             .catch(error => console.error('Error deleting files:', error));

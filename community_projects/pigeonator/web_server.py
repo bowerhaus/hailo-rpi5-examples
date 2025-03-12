@@ -8,11 +8,17 @@ import tempfile
 import logging
 
 # Configure logging to only show errors
-logging.getLogger('werkzeug').setLevel(logging.ERROR)
-logging.getLogger('flask').setLevel(logging.ERROR)
+# logging.getLogger('werkzeug').setLevel(logging.ERROR)
+# logging.getLogger('flask').setLevel(logging.ERROR)
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
+
+def get_date_param():
+    date = request.args.get('date')
+    if not date or date == 'undefined':
+        date = datetime.datetime.now().strftime("%Y%m%d")
+    return date
 
 @app.route('/api/files')
 def list_files():
@@ -29,32 +35,35 @@ def list_files():
     return jsonify(image_files)
 
 @app.route('/api/metadata')
-def list_metadata():
-    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
+def get_metadata():
+    # Get date from query parameter, default to today
+    date_param = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
     
-    if not os.path.exists(directory):
+    # Get 'since' parameter (Unix timestamp in seconds)
+    since_param = request.args.get('since')
+    since_timestamp = float(since_param) if since_param else None
+    
+    # Find all JSON metadata files for the specified date
+    date_dir = os.path.join(OUTPUT_DIRECTORY, date_param)
+    if not os.path.exists(date_dir):
         return jsonify([])
-
-    files = os.listdir(directory)
-    json_files = [f for f in files if f.endswith('.json')]
-    json_files.sort(reverse=True)  # Newest first
+    
+    json_files = [f for f in os.listdir(date_dir) if f.endswith('.json')]
+    
+    # Filter files by modification time if 'since' parameter was provided
+    if since_timestamp:
+        filtered_files = []
+        for filename in json_files:
+            file_path = os.path.join(date_dir, filename)
+            mtime = os.path.getmtime(file_path)
+            if mtime > since_timestamp:
+                filtered_files.append(filename)
+        json_files = filtered_files
+    
+    # Sort by timestamp (newest first)
+    json_files.sort(reverse=True)
+    
     return jsonify(json_files)
-
-@app.route('/api/images/<root_filename>')
-def list_sequence_images(root_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
-    # Remove the _xN_M suffix from filename to get base name
-    base_name = re.sub(r'_x\d+_\d+$', '', root_filename)
-    
-    # Find all sequence images matching the base name
-    all_files = os.listdir(directory)
-    sequence_images = [f for f in all_files if f.startswith(base_name) and '[' in f and f.endswith('.jpg')]
-    sequence_images.sort()  # Sort by sequence number
-    
-    return jsonify(sequence_images)
 
 @app.route('/api/update/<filename>', methods=['POST'])
 def update_json(filename):
@@ -121,14 +130,32 @@ def list_dates():
     dates.sort(reverse=True)  # Newest first
     return jsonify(dates)
 
-@app.route('/api/cpu_temperature')  # Changed from '/api/temperature'
-def get_cpu_temperature():  # Also renamed function for consistency
+@app.route('/api/cpu_temperature')
+def get_cpu_temperature():
     try:
-        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-            temp = float(f.read().strip()) / 1000.0  # Convert millicelsius to celsius
-        return jsonify({'temperature': round(temp, 1)})
+        # Try vcgencmd first (Raspberry Pi specific)
+        try:
+            output = subprocess.check_output(['vcgencmd', 'measure_temp']).decode('utf-8')
+            temp_str = output.strip().split('=')[1].replace('\'C', '')
+            temperature = float(temp_str)
+            return jsonify({"temperature": temperature})
+        except (subprocess.SubprocessError, FileNotFoundError):
+            # Fall back to reading from thermal zone if vcgencmd fails
+            try:
+                with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                    temp = float(f.read().strip()) / 1000.0  # Convert millicelsius to celsius
+                return jsonify({"temperature": round(temp, 1)})
+            except (IOError, FileNotFoundError):
+                # If no thermal info is available, return a mock value for testing
+                return jsonify({"temperature": 42.0, "mock": True})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Error getting temperature: {str(e)}")
+        return jsonify({"error": str(e), "temperature": None}), 500
+
+# Add a simple test endpoint to check if API is working
+@app.route('/api/test')
+def test_api():
+    return jsonify({"status": "API working", "timestamp": datetime.datetime.now().isoformat()})
 
 @app.route('/')
 def index():
