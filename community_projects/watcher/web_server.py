@@ -74,6 +74,23 @@ def list_metadata():
         return jsonify([])
     files = os.listdir(directory)
     json_files = [f for f in files if f.endswith('.json')]
+
+    since_timestamp = request.args.get('since', type=int)
+    if since_timestamp and since_timestamp > 0:
+        filtered_files = []
+        for file in json_files:
+            try:
+                # Extract timestamp from filename (e.g., 20240529_123456_789_...)
+                timestamp_str = file.split('_')[1] + file.split('_')[2]
+                file_timestamp = datetime.datetime.strptime(timestamp_str[:12], "%H%M%S%f").timestamp()
+                if file_timestamp > since_timestamp:
+                    filtered_files.append(file)
+            except (IndexError, ValueError):
+                # Handle files with unexpected naming format
+                print(f"Warning: Could not parse timestamp from filename: {file}")
+                continue
+        json_files = filtered_files
+
     json_files.sort(reverse=True)
     return jsonify(json_files)
 
