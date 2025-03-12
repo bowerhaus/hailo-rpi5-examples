@@ -116,7 +116,7 @@
 
         let isResizing = false;
         let lastDownX = 0;
-        let currentWidth = 300;
+        let currentWidth = 350; // Updated initial width to 350px to match CSS
 
         // Splitter functionality
         const splitter = document.getElementById('splitter');
@@ -540,7 +540,12 @@
 
         // Initial setup
         async function initialize() {
+            // Set initial width for metadataList and jsonViewer
+            const leftPanel = document.querySelector('.left-panel');
             metadataList.style.width = currentWidth + 'px';
+            document.getElementById('jsonViewer').style.width = '100%';
+            leftPanel.style.width = currentWidth + 'px';
+            
             selectedItem = null;
             currentJson = null;
             
