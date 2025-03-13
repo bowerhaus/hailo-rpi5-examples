@@ -76,14 +76,15 @@ def list_metadata():
     json_files = [f for f in files if f.endswith('.json')]
 
     since_timestamp = request.args.get('since', type=int)
-    if since_timestamp and since_timestamp > 0:
+    since_time_str = request.args.get('since_time', type=str)  # Get the since_time parameter
+
+    if since_time_str:
         filtered_files = []
         for file in json_files:
             try:
-                # Extract timestamp from filename (e.g., 20240529_123456_789_...)
-                timestamp_str = file.split('_')[1] + file.split('_')[2]
-                file_timestamp = datetime.datetime.strptime(timestamp_str[:12], "%H%M%S%f").timestamp()
-                if file_timestamp > since_timestamp:
+                # Extract time string from filename (e.g., 20240529_123456_789_...)
+                time_str = file.split('_')[1]  # Extract HHMMSS from filename
+                if time_str > since_time_str:
                     filtered_files.append(file)
             except (IndexError, ValueError):
                 # Handle files with unexpected naming format

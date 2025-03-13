@@ -159,7 +159,7 @@
             updateDateDisplay();
             clearSelection();
             document.getElementById('metadataList').innerHTML = ''; // Clear the list
-            lastMetadataRefresh = 0; // Reset lastMetadataRefresh when date changes
+            lastMetadataTime = ''; // Reset lastMetadataTime when date changes
             updateMetadataList();
             setupAutoRefresh();
         }
@@ -271,16 +271,16 @@
         let touchStartX = 0;
         let touchEndX = 0;
 
-        let lastMetadataRefresh = 0; // Timestamp of last metadata refresh
+        let lastMetadataTime = ''; // Time string of last metadata refresh
 
         async function updateMetadataList() {
             console.log('Fetching metadata list for date:', currentDirectory);
             const list = document.getElementById('metadataList');
-            // list.innerHTML = ''; // REMOVE THIS LINE
 
             let url = `/api/metadata?date=${currentDirectory}`;
-            if (lastMetadataRefresh > 0) {
-                url += `&since=${lastMetadataRefresh}`;
+
+            if (lastMetadataTime) {
+                url += `&since_time=${lastMetadataTime}`;
             }
 
             try {
@@ -349,7 +349,10 @@
                 });
 
                 // Update the last refresh timestamp
-                lastMetadataRefresh = Math.floor(Date.now() / 1000);
+                if (files.length > 0) {
+                    const lastFile = files[0];
+                    lastMetadataTime = lastFile.split('_')[1]; // Extract HHMMSS from filename
+                }
 
             } catch (error) {
                 console.error('Error fetching metadata:', error);
