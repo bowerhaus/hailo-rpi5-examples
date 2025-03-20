@@ -69,7 +69,7 @@ class Point2D:
         return angle if angle >= 0 else angle + 360
 
 # Inheritance from the app_callback_class
-class user_app_callback_class(app_callback_class):
+class HelenOMatic(app_callback_class):
     def __init__(self):
         super().__init__()
         
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     sleep(1)  # Give web server time to initialize.
     
     # Create the watcher app instance and run it. Active time checking now occurs inside run().
-    user_data = user_app_callback_class()
+    user_data = HelenOMatic()
     user_data.daytime_only = config.get("DAYTIME_ONLY", False)
     app = GStreamerWatcherApp(app_callback, user_data)
     user_data.app = app  # Store app reference in user_data
