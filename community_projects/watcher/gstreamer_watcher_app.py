@@ -20,6 +20,7 @@ from astral.sun import sun
 import threading
 from gi.repository import Gst
 import os
+from logger_config import logger  # Import the logger
 
 
 def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
@@ -160,7 +161,8 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
             if detected_arch is None:
                 raise ValueError("Could not auto-detect Hailo architecture. Please specify --arch manually.")
             self.arch = detected_arch
-            print(f"Auto-detected Hailo architecture: {self.arch}")
+            logger.info(f"Auto-detected Hailo architecture: {self.arch}")
+
         else:
             self.arch = args.arch
 
@@ -190,6 +192,7 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         # Set the process title
         #setproctitle.setproctitle("Hailo Detection App")
 
+        logger.info(f"Program arguments: {args}")  # Log the program arguments
         self.create_pipeline()
 
     def get_pipeline_string(self):
@@ -231,13 +234,13 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
                 # Outside active period; pause the pipeline if not already paused.
                 current_state = self.pipeline.get_state(0).state
                 if current_state != Gst.State.PAUSED:
-                    print("Outside active period. Pausing pipeline.")
+                    logger.info("Outside active period. Pausing pipeline.")
                     self.pipeline.set_state(Gst.State.PAUSED)
             else:
                 # Within active period; play the pipeline if not already playing.
                 current_state = self.pipeline.get_state(0).state
                 if current_state != Gst.State.PLAYING:
-                    print("Within active period. Setting pipeline to PLAYING.")
+                    logger.info("Within active period. Setting pipeline to PLAYING.")
                     self.pipeline.set_state(Gst.State.PLAYING)
             time.sleep(check_interval)
 
