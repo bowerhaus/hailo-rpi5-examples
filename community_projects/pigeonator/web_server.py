@@ -39,9 +39,8 @@ def get_metadata():
     # Get date from query parameter, default to today
     date_param = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
     
-    # Get 'since' parameter (Unix timestamp in seconds)
+    # Get 'since' parameter (HHMMSS string)
     since_param = request.args.get('since')
-    since_timestamp = float(since_param) if since_param else None
     
     # Find all JSON metadata files for the specified date
     date_dir = os.path.join(OUTPUT_DIRECTORY, date_param)
@@ -50,14 +49,16 @@ def get_metadata():
     
     json_files = [f for f in os.listdir(date_dir) if f.endswith('.json')]
     
-    # Filter files by modification time if 'since' parameter was provided
-    if since_timestamp:
+    # Filter files by time if 'since' parameter was provided
+    if since_param:
         filtered_files = []
         for filename in json_files:
-            file_path = os.path.join(date_dir, filename)
-            mtime = os.path.getmtime(file_path)
-            if mtime > since_timestamp:
-                filtered_files.append(filename)
+            # Extract time string from filename (HHMMSS)
+            match = re.match(r'^\d{8}_(\d{6})_', filename)
+            if match:
+                file_time = match.group(1)
+                if file_time > since_param:
+                    filtered_files.append(filename)
         json_files = filtered_files
     
     # Sort by timestamp (newest first)
