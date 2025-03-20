@@ -8,8 +8,8 @@
             "name": "Python: Run Helen-O-Matic",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}/community_projects/watcher",
-            "program": "${workspaceFolder}/community_projects/watcher/watcher.py",
+            "cwd": "${workspaceFolder}/community_projects/watcher/helen-o-matic",
+            "program": "${workspaceFolder}/community_projects/watcher/helen-o-matic/helen_o_matic.py",
             "console": "integratedTerminal",
             "args": ["--use-frame", "--input", "rpi"]
         },
@@ -17,8 +17,8 @@
             "name": "Python: Run Pigeonator",
             "type": "debugpy",
             "request": "launch",
-            "cwd": "${workspaceFolder}/community_projects/pigeonator",
-            "program": "${workspaceFolder}/community_projects//pigeonator/pigeonator.py",
+            "cwd": "${workspaceFolder}/community_projects/watcher/pigeonator",
+            "program": "${workspaceFolder}/community_projects/watcher/pigeonator/pigeonator.py",
             "console": "integratedTerminal",
             "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
             // "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "output/20250228/20250228_141713_545_bird_x1.mp4"]
