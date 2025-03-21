@@ -15,6 +15,8 @@ logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s -
 class Clock:
     def __init__(self, output_dir=config.get('OUTPUT_DIRECTORY', 'output')):
         self.output_dir = output_dir
+        # Create output directory if it doesn't exist
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def build_data(self):
         records = []
@@ -33,20 +35,36 @@ class Clock:
                         try:
                             with open(file_path, "r") as f:
                                 data = json.load(f)
+                            # Verify required fields exist
+                            if 'timestamp' not in data:
+                                logging.warning(f"Missing timestamp in {file_path}")
+                                continue
                             temp_storage.append((file_path, data))
                         except Exception as e:
-                            print(f"Error reading {file_path}: {e}")
+                            logging.warning(f"Error reading {file_path}: {e}")
 
-        # Sort temp_storage by timestamp
-        temp_storage.sort(key=lambda x: x[1]['timestamp'])
+        # Sort temp_storage by timestamp, handle exceptions for malformed data
+        try:
+            temp_storage.sort(key=lambda x: x[1]['timestamp'])
+        except Exception as e:
+            logging.error(f"Error sorting by timestamp: {e}")
+            return records
 
         # Process each file from the sorted temp_storage
         for file_path, data in temp_storage:
-            # Check if reviewed is true and label is HELEN_OUT or HELEN_BACK (case insensitive)
-            label = data.get("label", "")
-            if label:
+            try:
+                # Check if reviewed is true and label is HELEN_OUT or HELEN_BACK (case insensitive)
+                if not data.get("reviewed", False):
+                    continue
+                    
+                label = data.get("label", "")
+                if not label:
+                    continue
+                    
                 label = label.upper()
-            if data.get("reviewed") and label in ("HELEN_OUT", "HELEN_BACK"):
+                if label not in ("HELEN_OUT", "HELEN_BACK"):
+                    continue
+                    
                 current_date = data['timestamp'][:8]  # Extract date from timestamp
                 if current_date != last_date:
                     # New day
@@ -60,11 +78,13 @@ class Clock:
                     first_record_of_day = False
 
                 # Check for identical adjacent labels
-                if records and records[-1]['label'] == data['label']:
+                if records and records[-1].get('label', '') == data.get('label', ''):
                     logging.warning(f"Identical adjacent label found. Ignoring: {file_path}")
                     continue  # Ignore this record
 
                 records.append(data)
+            except Exception as e:
+                logging.warning(f"Error processing record {file_path}: {e}")
         
         return records
 
