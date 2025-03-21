@@ -2,7 +2,7 @@
 
 cd /home/bower/hailo-rpi5-examples
 source setup_env.sh
-cd ./community_projects/watcher
-python watcher.py --use-frame --input rpi  > ~/watcher.log 2>&1 &
+cd ./community_projects/watcher/helen-o-matic
+python helen_o_matic.py --use-frame --input rpi  > ~/helen-o-matic.log 2>&1 &
 
 
