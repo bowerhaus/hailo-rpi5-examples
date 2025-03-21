@@ -24,7 +24,6 @@ with open('config.json', 'r') as config_file:
     logger.info(f"Loaded config: {config}")
 
 HELLO = "hello.mp3"
-CLASS_ALERT = "classalert.mp3"
 
 # Inheritance from WatcherBase
 class PigeonatorWatcher(WatcherBase):
@@ -34,20 +33,11 @@ class PigeonatorWatcher(WatcherBase):
         # Set logger to use the pigeonator logger
         self.logger = logger
         
-        # Setup speech files
-        tts = gtts.gTTS(f"Its a {self.class_to_track.upper()}")
-        tts.save(CLASS_ALERT)
         logger.info(f"Looking for {self.class_to_track.upper()}")
 
         # Initialize DeterrentManager
         self.deterrent_manager = DeterrentManager(config)
         self.deter_delay_seconds = config.get('DETER_DELAY_SECONDS', 8)
-
-    def start_active_tracking(self, class_detections):
-        """Override to add pigeon-specific behavior"""
-        super().start_active_tracking(class_detections)
-        # Play alert sound
-        playsound(CLASS_ALERT, 0)
 
     def active_tracking(self, class_detections):
         """Override to add deterrent trigger logic"""

@@ -15,6 +15,10 @@ from hailo_apps_infra.hailo_rpi_common import (
 from gi.repository import Gst
 from geometry import Point2D
 from logger_config import logger  # Import the shared logger
+import gtts
+from playsound import playsound
+
+CLASS_ALERT = "classalert.mp3"
 
 class WatcherBase(app_callback_class):
     def __init__(self, config):
@@ -77,6 +81,10 @@ class WatcherBase(app_callback_class):
         self.active_timestamp = None
         self.initial_max_confidence = 0.0
 
+    def create_speech_files(self):
+        tts = gtts.gTTS(f"Its a {self.class_to_track.upper()}")
+        tts.save(CLASS_ALERT)
+
     def on_eos(self):
         """Handle end of stream."""
         if self.is_active_tracking:
@@ -112,6 +120,33 @@ class WatcherBase(app_callback_class):
             self.video_writer = None
             os.rename(self.video_filename, final_filename)
             self.logger.info(f"Video saved as {final_filename}")
+
+    def convert_video_to_h264(self, video_path):
+        """Convert video to H264 format using ffmpeg."""
+        try:
+            temp_path = video_path + ".temp.mp4"
+            final_path = video_path.replace('.m4v', '.mp4')  # Final path with .mp4 extension
+            
+            subprocess.run([
+                'ffmpeg',
+                '-y',  # Overwrite output file if it exists
+                '-i', video_path,  # Input is .m4v
+                '-codec:v', 'libx264',  # Use H264 codec
+                '-preset', 'fast',  # Use fast preset for speed
+                '-movflags', 'faststart',  # Optimize for web playback
+                temp_path
+            ], check=True, capture_output=True)
+            
+            # Replace original .m4v file with converted .mp4 file
+            os.replace(temp_path, final_path)
+            # Remove the original .m4v file
+            os.remove(video_path)
+            self.logger.info(f"Successfully converted {video_path} to H264 and saved as {final_path}")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to convert video {video_path} to H264: {e}")
+            # Clean up temp file if it exists
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
      
     def get_average_detection_instance_count(self):
         """Calculate the average detection instance count."""
@@ -154,6 +189,8 @@ class WatcherBase(app_callback_class):
         self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
         self.tracking_start_time = datetime.datetime.now()  # Record tracking start time
 
+        playsound(CLASS_ALERT, 0)
+
     def active_tracking(self, class_detections):
         """Update tracking information for active objects."""
         # Update total detection instances and active detection count for later averaging
@@ -179,32 +216,34 @@ class WatcherBase(app_callback_class):
                     self.logger.info(f"Video truncated after {self.max_video_seconds} seconds.")
                     self.video_truncated = True
 
-    def convert_video_to_h264(self, video_path):
-        """Convert video to H264 format using ffmpeg."""
-        try:
-            temp_path = video_path + ".temp.mp4"
-            final_path = video_path.replace('.m4v', '.mp4')  # Final path with .mp4 extension
-            
-            subprocess.run([
-                'ffmpeg',
-                '-y',  # Overwrite output file if it exists
-                '-i', video_path,  # Input is .m4v
-                '-codec:v', 'libx264',  # Use H264 codec
-                '-preset', 'fast',  # Use fast preset for speed
-                '-movflags', 'faststart',  # Optimize for web playback
-                temp_path
-            ], check=True, capture_output=True)
-            
-            # Replace original .m4v file with converted .mp4 file
-            os.replace(temp_path, final_path)
-            # Remove the original .m4v file
-            os.remove(video_path)
-            self.logger.info(f"Successfully converted {video_path} to H264 and saved as {final_path}")
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to convert video {video_path} to H264: {e}")
-            # Clean up temp file if it exists
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+        # Update moving average of velocity
+        if self.object_centroid is not None and self.previous_centroid is not None:
+            delta = self.object_centroid.subtract(self.previous_centroid)
+            self.avg_velocity = Point2D(
+                (self.avg_velocity.x * (self.active_detection_count - 1) + delta.x) / self.active_detection_count,
+                (self.avg_velocity.y * (self.active_detection_count - 1) + delta.y) / self.active_detection_count
+            )
+        self.previous_centroid = self.object_centroid
+
+    def create_metadata(self, root_filename, event_seconds):
+        """Create metadata dictionary."""
+        metadata = {
+            "filename": root_filename,
+            "class": self.class_to_track,
+            "initial_confidence": round(self.initial_max_confidence, 2),
+            "timestamp": self.active_timestamp,
+            "max_instances": self.max_instances,
+            "average_instances": self.get_average_detection_instance_count(),
+            "event_seconds": round(event_seconds, 1),  # Round to 1 decimal place
+            "video_truncated": self.video_truncated,  
+            "reviewed": False  # Add reviewed field, initially false
+        }
+        return metadata
+    
+    def root_filename(self):
+        """Create final root filename."""
+        avg_detection_count_rounded = round(self.get_average_detection_instance_count())
+        return f"{self.active_timestamp}_{self.class_to_track}_x{avg_detection_count_rounded}"
 
     def stop_active_tracking(self):
         """Stop tracking objects and save relevant data."""
@@ -212,12 +251,10 @@ class WatcherBase(app_callback_class):
         self.end_centroid = self.object_centroid
         
         avg_detection_count = self.get_average_detection_instance_count()
-        avg_detection_count_rounded = round(avg_detection_count)
-    
         self.logger.info(f"{self.class_to_track.upper()} GONE time: {datetime.datetime.now()}, avg count: {avg_detection_count:.2f}, max count: {self.max_instances}")
 
         # Create root filename
-        root_filename = f"{self.active_timestamp}_{self.class_to_track}_x{avg_detection_count_rounded}"
+        root_filename = self.root_filename()
 
         # Ensure output directories exist
         date_subdir = datetime.datetime.now().strftime("%Y%m%d")
@@ -249,16 +286,7 @@ class WatcherBase(app_callback_class):
         event_seconds = (datetime.datetime.now() - event_start).total_seconds()
 
         # Create metadata dictionary
-        metadata = {
-            "filename": root_filename,
-            "class": self.class_to_track,
-            "initial_confidence": self.initial_max_confidence,
-            "timestamp": self.active_timestamp,
-            "max_instances": self.max_instances,
-            "average_instances": avg_detection_count,
-            "event_seconds": event_seconds,
-            "reviewed": False  # Add reviewed field, initially false
-        }
+        metadata = self.create_metadata(root_filename, event_seconds)
 
         # Save metadata as JSON file
         metadata_filename = f"{output_dir}/{root_filename}.json"
