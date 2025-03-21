@@ -171,12 +171,35 @@ def list_dates():
 @token_required
 def get_cpu_temperature():
     try:
+        # Get CPU temperature using vcgencmd
         temp = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
         temp = float(temp.replace("temp=", "").replace("'C\n", ""))
-        return jsonify({"cpu_temp": temp})
+        
+        # Return multiple temperature formats to ensure compatibility with frontend
+        return jsonify({
+            "cpu_temp": temp,
+            "temperature": temp,
+            "temp": temp,
+            "value": temp,
+            "formatted": f"{temp}°C"
+        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+        logging.error(f"Error retrieving CPU temperature: {str(e)}")
+        # Try alternative method if vcgencmd fails
+        try:
+            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                temp = float(f.read().strip()) / 1000
+            return jsonify({
+                "cpu_temp": temp,
+                "temperature": temp,
+                "temp": temp,
+                "value": temp,
+                "formatted": f"{temp}°C"
+            })
+        except Exception as alt_e:
+            logging.error(f"Alternative method also failed: {str(alt_e)}")
+            return jsonify({"error": f"Failed to get temperature: {str(e)}"}), 500
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
