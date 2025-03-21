@@ -8,7 +8,7 @@ import tempfile
 from io import BytesIO
 from clock import Clock
 import jwt
-import hashlib  # New import for password hashing
+import hashlib  
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 OUTPUT_DIRECTORY = 'output'
@@ -197,10 +197,10 @@ def login():
     users = load_users()
     # Compare stored hash with hash of provided password
     if username in users and users[username] == hash_password(password):
-        # Set token to expire after 1 minute using non-deprecated datetime method
+        # Set token to expire after 2 minutes instead of 12 hours
         token = jwt.encode({
             'username': username,
-            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=12)
+            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=2)
         }, SECRET_KEY, algorithm='HS256')
         response = jsonify({'token': token})
         response.set_cookie('token', token)
