@@ -10,7 +10,7 @@ from playsound import playsound
 import datetime
 import json
 from logger_config import logger
-from gstreamer_watcher_app import GStreamerWatcherApp
+from gstreamer_helenomatic_app import GStreamerHelenOMaticApp  # Updated import
 from geometry import Point2D
 
 import threading
@@ -193,8 +193,8 @@ if __name__ == "__main__":
     
     sleep(1)  # Give web server time to initialize.
     
-    # Create the watcher app instance and run it
+    # Create the helenomatic app instance and run it - updated class name
     user_data = HelenOMatic(config)
-    app = GStreamerWatcherApp(watcher_base_callback, user_data)
+    app = GStreamerHelenOMaticApp(watcher_base_callback, user_data)
     user_data.app = app  # Store app reference in user_data
     app.run()

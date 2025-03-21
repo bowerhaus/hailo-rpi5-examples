@@ -23,7 +23,7 @@ import os
 from logger_config import logger  # Import the logger
 
 
-def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
+def SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
     """
     Creates a GStreamer pipeline string for the video source.
 
@@ -91,12 +91,13 @@ def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_f
     return source_pipeline
 
 def get_screen_resolution():
+    """Get current screen resolution."""
     monitor = get_monitors()[0]
     width = monitor.width
     height = monitor.height
     return width, height
 
-def NEW_DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false', name='hailo_display'):
+def DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false', name='hailo_display'):
     """
     Creates a GStreamer pipeline string for displaying the video.
     It includes the hailooverlay plugin to draw bounding boxes and labels on the video.
@@ -128,6 +129,15 @@ def NEW_DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false'
     return display_pipeline
 
 def get_active_period(date):
+    """
+    Calculate active period based on sunrise and sunset times.
+    
+    Args:
+        date: The date to calculate the active period for.
+        
+    Returns:
+        tuple: (active_start, active_end) times for the given date.
+    """
     # Adjust location as needed; default uses London coordinates.
     loc = LocationInfo("London", "England", "Europe/London", 51.5, -0.116)
     s = sun(loc.observer, date=date)
@@ -136,24 +146,31 @@ def get_active_period(date):
     return active_start.replace(tzinfo=None), active_end.replace(tzinfo=None)
 
 class GStreamerWatcherApp(GStreamerDetectionApp):
+    """Base class for watcher applications using the Hailo detection pipeline."""
+    
     def __init__(self, app_callback, user_data):
+        """
+        Initialize the watcher application.
+        
+        Args:
+            app_callback: Callback function to process frames.
+            user_data: User data to pass to the callback.
+        """
         parser = get_default_parser()
         parser.add_argument(
             "--labels-json",
             default=None,
-            help="Path to costume labels JSON file",
+            help="Path to custom labels JSON file",
         )
         args = parser.parse_args()
+        
         # Call the parent class constructor
         super().__init__(args, user_data)
-        # Additional initialization code can be added here
-        # Set Hailo parameters these parameters should be set based on the model used
+        
+        # Set Hailo parameters
         self.batch_size = 2
-        nms_score_threshold = 0.3
-        nms_iou_threshold = 0.45
-
-        #self.video_width =512
-        #self.video_height =512
+        self.nms_score_threshold = 0.3
+        self.nms_iou_threshold = 0.45
 
         # Determine the architecture if not specified
         if args.arch is None:
@@ -162,14 +179,12 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
                 raise ValueError("Could not auto-detect Hailo architecture. Please specify --arch manually.")
             self.arch = detected_arch
             logger.info(f"Auto-detected Hailo architecture: {self.arch}")
-
         else:
             self.arch = args.arch
 
-
+        # Set the HEF file path based on the architecture
         if args.hef_path is not None:
             self.hef_path = args.hef_path
-        # Set the HEF file path based on the arch
         elif self.arch == "hailo8":
             self.hef_path = os.path.join(self.current_path, '../resources/yolov8m.hef')
         else:  # hailo8l
@@ -178,25 +193,29 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         # Set the post-processing shared object file
         self.post_process_so = os.path.join(self.current_path, '../resources/libyolo_hailortpp_postprocess.so')
         self.post_function_name = "filter_letterbox"
+        
         # User-defined label JSON file
         self.labels_json = args.labels_json
 
         self.app_callback = app_callback
 
         self.thresholds_str = (
-            f"nms-score-threshold={nms_score_threshold} "
-            f"nms-iou-threshold={nms_iou_threshold} "
+            f"nms-score-threshold={self.nms_score_threshold} "
+            f"nms-iou-threshold={self.nms_iou_threshold} "
             f"output-format-type=HAILO_FORMAT_TYPE_FLOAT32"
         )
 
-        # Set the process title
-        #setproctitle.setproctitle("Hailo Detection App")
-
-        logger.info(f"Program arguments: {args}")  # Log the program arguments
+        logger.info(f"Program arguments: {args}")
         self.create_pipeline()
 
     def get_pipeline_string(self):
-        source_pipeline = NEW_SOURCE_PIPELINE(self.video_source, self.video_width, self.video_height)
+        """
+        Create the GStreamer pipeline string.
+        
+        Returns:
+            str: The GStreamer pipeline string.
+        """
+        source_pipeline = SOURCE_PIPELINE(self.video_source, self.video_width, self.video_height)
         detection_pipeline = INFERENCE_PIPELINE(
             hef_path=self.hef_path,
             post_process_so=self.post_process_so,
@@ -207,16 +226,15 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         detection_pipeline_wrapper = INFERENCE_PIPELINE_WRAPPER(detection_pipeline)
         tracker_pipeline = TRACKER_PIPELINE(class_id=-1)
         user_callback_pipeline = USER_CALLBACK_PIPELINE()
-        display_pipeline = NEW_DISPLAY_PIPELINE(video_sink="xvimagesink", sync=self.sync, show_fps=self.show_fps)
+        display_pipeline = DISPLAY_PIPELINE(video_sink="xvimagesink", sync=self.sync, show_fps=self.show_fps)
 
         pipeline_string = (
             f'{source_pipeline} ! '
             f'{detection_pipeline_wrapper} ! '
-
-            f'{user_callback_pipeline} !'
+            f'{user_callback_pipeline} ! '
             f'{display_pipeline}'
         )
-        print(pipeline_string)
+        logger.info(f"Pipeline: {pipeline_string}")
         return pipeline_string
 
     def monitor_active_period(self):
@@ -245,11 +263,12 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
             time.sleep(check_interval)
 
     def on_eos(self):
+        """Handle end-of-stream event."""
         self.user_data.on_eos()
         self.pipeline.set_state(Gst.State.PAUSED)
 
     def run(self):
-
+        """Run the watcher application."""
         # Proceed with the pipeline execution.
         self.user_data.pipeline = self.pipeline
         
