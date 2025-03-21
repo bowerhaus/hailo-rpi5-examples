@@ -38,6 +38,8 @@ class WatcherBase(app_callback_class):
         self.output_directory = config.get('OUTPUT_DIRECTORY', 'output')
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)
         self.daytime_only = config.get('DAYTIME_ONLY', False)
+
+        self.create_speech_files()
         
         # Initialize state variables for debouncing
         self.detection_counter = 0  # Count consecutive frames with detections
@@ -160,6 +162,10 @@ class WatcherBase(app_callback_class):
         else:
             return np.mean(detection_counts_np)
 
+    def playsound_async(self, sound_file):
+        """Play sound asynchronously in a separate thread."""
+        threading.Thread(target=playsound, args=(sound_file,), daemon=True).start()
+
     def start_active_tracking(self, class_detections):
         """Start tracking detected objects."""
         self.is_active_tracking = True
@@ -189,7 +195,7 @@ class WatcherBase(app_callback_class):
         self.initial_max_confidence = max(det.get_confidence() for det in class_detections) if class_detections else 0.0
         self.tracking_start_time = datetime.datetime.now()  # Record tracking start time
 
-        playsound(CLASS_ALERT, 0)
+        self.playsound_async(CLASS_ALERT)
 
     def active_tracking(self, class_detections):
         """Update tracking information for active objects."""

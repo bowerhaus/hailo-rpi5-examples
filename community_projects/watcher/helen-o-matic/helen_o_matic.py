@@ -55,9 +55,9 @@ class HelenOMatic(WatcherBase):
         estimated_label = self.estimate_label(avg_velocity_direction, self.max_instances, avg_detection_count)
 
         if estimated_label == "HELEN_OUT":
-            playsound(HELEN_OUT_ALERT, 0)
+            self.playsound_async(HELEN_OUT_ALERT)
         elif estimated_label == "HELEN_BACK":
-            playsound(HELEN_BACK_ALERT, 0)
+            self.playsound_async(HELEN_BACK_ALERT)
 
         new_metadata = {
             "direction": avg_velocity_direction,
@@ -110,8 +110,9 @@ class HelenOMatic(WatcherBase):
 if __name__ == "__main__":
     # Create an instance of the user app callback class
     tts = gtts.gTTS(f"Hello Helen Oh Matic")
-    tts.save(HELLO) 
-    playsound(HELLO, 0)
+    tts.save(HELLO)
+    user_data = HelenOMatic(config)
+    user_data.playsound_async(HELLO)
     
     # Start the web server in a separate thread   
     web_server_thread = threading.Thread(
@@ -128,7 +129,6 @@ if __name__ == "__main__":
     sleep(1)  # Give web server time to initialize.
     
     # Create the helenomatic app instance and run it - updated class name
-    user_data = HelenOMatic(config)
     app = GStreamerHelenOMaticApp(watcher_base_callback, user_data)
     user_data.app = app  # Store app reference in user_data
     app.run()

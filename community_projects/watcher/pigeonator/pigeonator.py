@@ -60,7 +60,8 @@ if __name__ == "__main__":
     # Create an instance of the user app callback class
     tts = gtts.gTTS(f"Hello Pigeonator")
     tts.save(HELLO) 
-    playsound(HELLO, 0)
+    user_data = PigeonatorWatcher(config)
+    user_data.playsound_async(HELLO)
     
     # Start web server first.
     web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
@@ -70,7 +71,6 @@ if __name__ == "__main__":
     sleep(1)  # Give web server time to initialize.
     
     # Create the watcher app instance and run it
-    user_data = PigeonatorWatcher(config)
     app = GStreamerPigeonatorApp(watcher_base_callback, user_data)
     user_data.app = app
     app.run()
