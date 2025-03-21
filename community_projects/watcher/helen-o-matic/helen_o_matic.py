@@ -118,7 +118,7 @@ if __name__ == "__main__":
     web_server_kwargs = {'host': '0.0.0.0', 'port': 5000}
     
     # Check if SSL should be used
-    if config.get('USE_SSL', False):
+    if config.get('USE_SSL', True):
         web_server_kwargs['ssl_context'] = ('certificate/helen-o-matic.pem', 'certificate/helen-o-matic-privkey.pem')
         logger.info("Starting web server with SSL enabled")
     else:
