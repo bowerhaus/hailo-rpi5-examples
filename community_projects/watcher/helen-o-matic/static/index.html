@@ -280,7 +280,7 @@
             let url = `/api/metadata?date=${currentDirectory}`;
 
             if (lastMetadataTime) {
-                url += `&since_time=${lastMetadataTime}`;
+                url += `&since=${lastMetadataTime}`;
             }
 
             try {

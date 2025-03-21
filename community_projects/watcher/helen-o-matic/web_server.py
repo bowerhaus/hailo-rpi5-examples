@@ -1,169 +1,41 @@
-from flask import Flask, send_from_directory, jsonify, request, send_file, redirect, url_for
+from flask import Flask, send_from_directory, jsonify, request, send_file
 import os
-import datetime
-import re
-import json
-import subprocess
-import tempfile
+import sys
 from io import BytesIO
 from clock import Clock
-import jwt
-import hashlib  
+
+# Add watcher directory to Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from web_server_common import (token_required, handle_login, handle_register, handle_login_page,
+                   handle_list_dates, handle_media, handle_delete_files, handle_update_json,
+                   handle_cpu_temperature, get_date_param, OUTPUT_DIRECTORY, handle_metadata_request)
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
-OUTPUT_DIRECTORY = 'output'
-SECRET_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQxMzAzNTE0LCJleHAiOjE3NDEzMDcxMTR9.WSL53OdeTIlC1HT44_ZocGUTZf-nTm-GduDIKh-FEzo'
-USERS_FILE = 'users.json'
-
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=2)
-
-def hash_password(password):
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
-
-def get_date_param():
-    date = request.args.get('date')
-    if not date or date == 'undefined':
-        date = datetime.datetime.now().strftime("%Y%m%d")
-    return date
-
-def token_required(f):
-    def wrap(*args, **kwargs):
-        token = request.cookies.get('token')
-        if not token:
-            return redirect(url_for('login_page'))
-        try:
-            jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        except:
-            return redirect(url_for('login_page'))
-        return f(*args, **kwargs)
-    wrap.__name__ = f.__name__
-    return wrap
-
-def get_date_param():
-    date = request.args.get('date')
-    if not date or date == 'undefined':
-        date = datetime.datetime.now().strftime("%Y%m%d")
-    return date
-
-@app.route('/api/files')
-@token_required
-def list_files():
-    date = get_date_param()
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    if not os.path.exists(directory):
-        return jsonify([])
-    files = os.listdir(directory)
-    image_files = [f for f in files if f.endswith('.jpg')]
-    image_files.sort(reverse=True)
-    return jsonify(image_files)
 
 @app.route('/api/metadata')
 @token_required
 def list_metadata():
-    date = get_date_param()
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    if not os.path.exists(directory):
-        return jsonify([])
-    files = os.listdir(directory)
-    json_files = [f for f in files if f.endswith('.json')]
-
-    since_timestamp = request.args.get('since', type=int)
-    since_time_str = request.args.get('since_time', type=str)  # Get the since_time parameter
-
-    if since_time_str:
-        filtered_files = []
-        for file in json_files:
-            try:
-                # Extract time string from filename (e.g., 20240529_123456_789_...)
-                time_str = file.split('_')[1]  # Extract HHMMSS from filename
-                if time_str > since_time_str:
-                    filtered_files.append(file)
-            except (IndexError, ValueError):
-                # Handle files with unexpected naming format
-                print(f"Warning: Could not parse timestamp from filename: {file}")
-                continue
-        json_files = filtered_files
-
-    json_files.sort(reverse=True)
-    return jsonify(json_files)
-
-@app.route('/api/images/<root_filename>')
-@token_required
-def list_sequence_images(root_filename):
-    date = get_date_param()
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    base_name = re.sub(r'_x\d+_\d+$', '', root_filename)
-    all_files = os.listdir(directory)
-    sequence_images = [f for f in all_files if f.startswith(base_name) and '[' in f and f.endswith('.jpg')]
-    sequence_images.sort()
-    return jsonify(sequence_images)
+    return handle_metadata_request()
 
 @app.route('/api/update/<filename>', methods=['POST'])
 @token_required
 def update_json(filename):
-    date = get_date_param()
-    if not filename.endswith('.json'):
-        return jsonify({'error': 'Invalid file type'}), 400
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    filepath = os.path.join(directory, filename)
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-    try:
-        json_data = request.get_json()
-        with open(filepath, 'w') as f:
-            json.dump(json_data, f, indent=2)
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return handle_update_json(filename)
 
 @app.route('/api/delete/<base_filename>', methods=['DELETE'])
 @token_required
 def delete_files(base_filename):
-    date = get_date_param()
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    if not os.path.exists(directory):
-        return jsonify({'error': 'Directory not found'}), 404
-    files_to_delete = [f for f in os.listdir(directory) if f.startswith(base_filename)]
-    for file in files_to_delete:
-        os.remove(os.path.join(directory, file))
-    return jsonify({'success': True, 'deleted_files': files_to_delete})
+    return handle_delete_files(base_filename)
 
 @app.route('/media/<filename>')
 @token_required
 def serve_media(filename):
-    match = re.match(r'^(\d{8})_', filename)
-    if not match:
-        return jsonify({'error': 'Invalid filename format'}), 400
-
-    date = match.group(1)
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    filepath = os.path.join(directory, filename)
-
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-
-    if filename.endswith('.jpg') or filename.endswith('.json') or filename.endswith('.mp4'):
-        return send_from_directory(directory, filename)
-    
-    return '', 404
+    return handle_media(filename)
 
 @app.route('/api/dates')
 @token_required
 def list_dates():
-    if not os.path.exists(OUTPUT_DIRECTORY):
-        return jsonify([])
-
-    dates = [d for d in os.listdir(OUTPUT_DIRECTORY) if os.path.isdir(os.path.join(OUTPUT_DIRECTORY, d))]
-    dates.sort(reverse=True)
-    return jsonify(dates)
+    return handle_list_dates()
 
 @app.route('/api/clock_image')
 @token_required
@@ -181,64 +53,30 @@ def get_clock_image():
 @app.route('/api/cpu_temperature')
 @token_required
 def get_cpu_temp():
-    try:
-        temp = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
-        temp = float(temp.replace("temp=", "").replace("'C\n", ""))
-        return jsonify({"cpu_temp": temp})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return handle_cpu_temperature()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    users = load_users()
-    # Compare stored hash with hash of provided password
-    if username in users and users[username] == hash_password(password):
-        # Set token to expire after 60 minutes instead of 2 minutes
-        token = jwt.encode({
-            'username': username,
-            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60)
-        }, SECRET_KEY, algorithm='HS256')
-        response = jsonify({'token': token})
-        response.set_cookie('token', token)
-        return response
-    else:
-        return jsonify({'error': 'Invalid credentials'}), 401
+    return handle_login()
 
 @app.route('/api/register', methods=['POST'])
-@token_required  # registration endpoint now requires authentication
+@token_required
 def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    users = load_users()
-    if username in users:
-        return jsonify({'error': 'User already exists'}), 400
-    
-    # Store the hashed password instead of plain text
-    users[username] = hash_password(password)
-    save_users(users)
-    return jsonify({'success': True})
+    return handle_register()
 
 @app.route('/login')
 def login_page():
-    response = send_from_directory('static', 'login.html')
-    response.delete_cookie('token')  # Logout: remove authentication cookie when navigating to login page
-    return response
+    return handle_login_page(app.static_folder)
 
 @app.route('/')
 @token_required
 def home():
-    return send_from_directory('static', 'home.html')
+    return send_from_directory(app.static_folder, 'home.html')
 
 @app.route('/review')
 @token_required
 def review():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', ssl_context=('certificate/helen-o-matic.pem', 'certificate/helen-o-matic-privkey.pem'))
