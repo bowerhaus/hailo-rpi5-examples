@@ -64,7 +64,16 @@ if __name__ == "__main__":
     user_data.playsound_async(HELLO)
     
     # Start web server first.
-    web_server_thread = threading.Thread(target=web_app.run, kwargs={'host': '0.0.0.0', 'port': 5000})
+    web_server_kwargs = {'host': '0.0.0.0', 'port': 5000}
+    
+    # Check if SSL should be used
+    if config.get('USE_SSL', False):
+        web_server_kwargs['ssl_context'] = ('certificate/pigeonator.pem', 'certificate/pigeonator-privkey.pem')
+        logger.info("Starting web server with SSL enabled")
+    else:
+        logger.info("Starting web server without SSL")
+    
+    web_server_thread = threading.Thread(target=web_app.run, kwargs=web_server_kwargs)
     web_server_thread.daemon = True
     web_server_thread.start()
     

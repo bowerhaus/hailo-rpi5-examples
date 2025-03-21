@@ -7,5 +7,6 @@
     "SAVE_DETECTION_VIDEO": true,
     "SHOW_DETECTION_BOXES": true,
     "FRAME_RATE": 30,
-    "DAYTIME_ONLY": true
+    "DAYTIME_ONLY": true,
+    "USE_SSL": true
 }
