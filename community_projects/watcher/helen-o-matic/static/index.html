@@ -10,7 +10,7 @@
         #cpuTemp {
             position: fixed;
             top: 10px;
-            right: 10px;
+            right: 120px; /* Move temperature display to the left to make room for logout button */
             background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 5px 10px;
@@ -22,6 +22,9 @@
 </head>
 <body>
     <div id="cpuTemp">CPU: -- °C</div>
+    <div class="logout-button-container">
+        <button class="logout-button" onclick="handleLogout()">Logout</button>
+    </div>
     <div class="split-container">
         <div class="left-panel">
             <div class="metadata-list" id="metadataList"></div>
@@ -628,6 +631,14 @@
                 closeMobileModal(); // Close the modal after successful toggle
             })
             .catch(error => console.error('Error updating reviewed flag:', error));
+        }
+
+        // Add logout functionality
+        function handleLogout() {
+            // Clear local storage
+            localStorage.clear();
+            // Redirect to login page
+            window.location.href = '/login';
         }
 
         // Initial setup

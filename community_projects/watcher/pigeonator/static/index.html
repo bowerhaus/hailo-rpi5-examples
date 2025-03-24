@@ -9,6 +9,9 @@
 </head>
 <body>
     <div class="temperature-display" id="temperatureDisplay">CPU: --°C</div>
+    <div class="logout-button-container">
+        <button class="logout-button" onclick="handleLogout()">Logout</button>
+    </div>
     <div class="split-container">
         <div class="left-panel">
             <div class="metadata-list" id="metadataList"></div>
@@ -593,6 +596,14 @@
         }
 
         initialize();
+
+        // Add logout functionality
+        function handleLogout() {
+            // Clear local storage
+            localStorage.clear();
+            // Redirect to login page
+            window.location.href = '/login';
+        }
     </script>
 </body>
 </html>

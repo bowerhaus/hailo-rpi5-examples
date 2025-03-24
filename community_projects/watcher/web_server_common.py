@@ -84,6 +84,12 @@ def handle_login_page(static_folder):
     response.delete_cookie('token')  # Logout: remove authentication cookie when navigating to login page
     return response
 
+# Add explicit logout handler
+def handle_logout():
+    response = redirect(url_for('login_page'))
+    response.delete_cookie('token')
+    return response
+
 def handle_list_dates():
     if not os.path.exists(OUTPUT_DIRECTORY):
         return jsonify([])

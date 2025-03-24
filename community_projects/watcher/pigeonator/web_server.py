@@ -8,7 +8,8 @@ import re
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from web_server_common import (token_required, handle_login, handle_register, handle_login_page,
                    handle_list_dates, handle_media, handle_delete_files, handle_update_json,
-                   handle_cpu_temperature, get_date_param, OUTPUT_DIRECTORY, handle_metadata_request)
+                   handle_cpu_temperature, get_date_param, OUTPUT_DIRECTORY, handle_metadata_request,
+                   handle_logout)
 
 # Configure logging to only show errors
 # logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -49,6 +50,10 @@ def get_cpu_temperature():
 @app.route('/api/login', methods=['POST'])
 def login():
     return handle_login()
+
+@app.route('/logout')
+def logout():
+    return handle_logout()
 
 @app.route('/api/register', methods=['POST'])
 @token_required
