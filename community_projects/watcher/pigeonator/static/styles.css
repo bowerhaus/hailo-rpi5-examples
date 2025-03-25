@@ -458,9 +458,12 @@ body {
 
 /* Mobile styles */
 @media (max-width: 768px) {
-    /* Basic mobile layout */
+    /* Core layout containers */
     .split-container {
         flex-direction: column;
+        width: 100%;
+        padding: 0;
+        margin: 0;
     }
 
     .left-panel {
@@ -468,13 +471,33 @@ body {
         height: calc(100vh - 40px);
         margin-top: 40px;
         border-right: none;
+        padding: 0;
+        box-sizing: border-box;
     }
 
-    .metadata-list,
-    .json-viewer {
+    /* Metadata list container */
+    .metadata-list {
         width: 100%;
         flex: 1;
         overflow-y: auto;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Individual event items */
+    .event-item {
+        width: 100%;
+        padding: 10px;
+        margin: 0;
+        box-sizing: border-box;
+        max-width: none;
+    }
+
+    /* Refresh button */
+    .refresh-button {
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
     }
 
     .image-viewer,
@@ -648,4 +671,92 @@ body {
     .mobile-video-modal .download-button {
         background: #8e44ad;
     }
+
+    .refresh-button {
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+
+    /* Make sure event items don't have extra margins */
+    .event-item {
+        padding: 10px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    /* Ensure all containers have no unexpected padding/margins */
+    .split-container {
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+    }
+
+    .left-panel {
+        width: 100%;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
+        border-right: none;
+        padding: 0;  /* Ensure no padding */
+        box-sizing: border-box;
+    }
+
+    /* Ensure metadata list takes full width */
+    .metadata-list {
+        width: 100%;
+        flex: 1;
+        overflow-y: auto;
+        padding: 0; /* Remove any padding */
+        margin: 0; /* Remove any margin */
+    }
+
+    /* Force all event items to take full width */
+    .event-item {
+        width: 100% !important; /* Override any other width settings */
+        padding: 10px;
+        margin: 0 !important; /* Remove any margins */
+        box-sizing: border-box;
+        max-width: 100%; /* Ensure no max-width constraints */
+    }
+
+    /* Fix refresh button */
+    .refresh-button {
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+
+    /* Reset all potential containers to full width */
+    body, 
+    .split-container, 
+    .left-panel, 
+    .metadata-list, 
+    .json-viewer,
+    .event-item {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Add specific padding only to the elements that need it */
+    .event-item {
+        padding: 10px !important;
+    }
+    
+    /* Remove any potential floating or absolute positioning */
+    .metadata-list > * {
+        float: none !important;
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+    }
+    
+    /* Debug outlines - uncomment to visualize boxes */
+    /*.metadata-list { outline: 2px solid red !important; }
+    .event-item { outline: 2px solid blue !important; }*/
 }
