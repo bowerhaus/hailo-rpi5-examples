@@ -19,6 +19,12 @@
             font-size: 14px;
             z-index: 1000;
         }
+        
+        .star-icon {
+            color: gold;
+            margin-left: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -47,7 +53,7 @@
                       <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
                     </p>
                 </video>
-                <div class="time-indicator" id="timeIndicator"></div>
+                <div class="time-indic-Maticator" id="timeIndicator"></div>
             </div>
             <div class="button-container">
                 <!-- New toggle button with id "toggle-reviewed-button" inserted to the left -->
@@ -61,7 +67,10 @@
                     <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
                     <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
                     <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                    <!-- Moved tag button inside the direction buttons group to the right of OTHER button -->
+                    <button class="direction-button tag-button" onclick="toggleTagged()">Tag</button>
                 </div>
+                <!-- Removed the tag button from here -->
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
         </div>
@@ -82,10 +91,14 @@
                     <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
                     <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
                     <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
-                    <button class="download-button" id="mobileDownloadButton" onclick="downloadCurrentVideo()">
-                        <i class="material-icons">file_download</i>
-                    </button>
+                    <!-- Swap position: Move tag button to bottom right grid position -->
+                    <button class="tag-button" id="mobileTagButton" onclick="toggleTagged()">Tag</button>
                 </div>
+                <!-- Removed tag button from here -->
+                <!-- Add download button before delete button -->
+                <button class="download-button" id="mobileDownloadButton" onclick="downloadCurrentVideo()">
+                    <i class="material-icons">file_download</i>
+                </button>
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
             <div class="mobile-close-container">
@@ -349,6 +362,15 @@
                         e.stopPropagation();
                         selectEvent(file, item);
                     };
+                    
+                    // Add star icon for tagged items
+                    if (json && json.tagged) {
+                        const starSpan = document.createElement('span');
+                        starSpan.className = 'star-icon';
+                        starSpan.textContent = '⭐';
+                        item.appendChild(starSpan);
+                    }
+                    
                     return item;
                 });
 
@@ -440,6 +462,7 @@
                 .then(response => response.json())
                 .then(json => {
                     displayJson(json);
+                    // Update reviewed button state
                     const btn = document.getElementById('toggle-reviewed-button');
                     const mobileBtn = document.getElementById('mobile-toggle-reviewed-button');
                     if (json.reviewed) {
@@ -453,6 +476,12 @@
                         btn.innerHTML = "Reviewed";
                         mobileBtn.innerHTML = "Reviewed";
                     }
+                    
+                    // Update tag button state (both desktop and mobile)
+                    const tagButtons = document.querySelectorAll('.tag-button');
+                    tagButtons.forEach(button => {
+                        button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
+                    });
                 });
 
             const baseFilename = filename.replace('.json', '');
@@ -534,6 +563,21 @@
                 item.classList.add('helen-out');
             } else if (json.label === 'HELEN_BACK') {
                 item.classList.add('helen-back');
+            }
+            
+            // Update star icon based on tagged property
+            const existingStar = item.querySelector('.star-icon');
+            if (json.tagged) {
+                if (!existingStar) {
+                    const starSpan = document.createElement('span');
+                    starSpan.className = 'star-icon';
+                    starSpan.textContent = '⭐';
+                    item.appendChild(starSpan);
+                }
+            } else {
+                if (existingStar) {
+                    existingStar.remove();
+                }
             }
         }
 
@@ -638,6 +682,37 @@
                 closeMobileModal(); // Close the modal after successful toggle
             })
             .catch(error => console.error('Error updating reviewed flag:', error));
+        }
+
+        // Add the toggleTagged function
+        function toggleTagged() {
+            if (!selectedItem || !currentJson) return;
+            
+            // Toggle the tagged property
+            currentJson.tagged = !currentJson.tagged;
+            
+            // Update display
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update tag button state (both desktop and mobile)
+            const tagButtons = document.querySelectorAll('.tag-button');
+            tagButtons.forEach(button => {
+                button.innerHTML = `Tag${currentJson.tagged ? ' ✓' : ''}`;
+            });
+            
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Tagged flag toggled successfully');
+                // Don't close mobile modal on tag toggle
+            })
+            .catch(error => console.error('Error updating tagged flag:', error));
         }
 
         // Add logout functionality

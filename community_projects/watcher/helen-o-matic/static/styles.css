@@ -329,6 +329,34 @@ body {
     color: white;
 }
 
+.tag-button {
+    background: #007bff; /* Changed from orange to blue to match Pigeonator */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    /* Removed height and padding attributes so it inherits from direction-button */
+}
+
+.tag-button:hover {
+    background: #0056b3; /* Darker blue on hover */
+}
+
+/* Added this class to make the tag button in the direction buttons have the same size */
+.direction-button.tag-button {
+    background: #007bff; /* Changed from orange to blue */
+}
+
+.direction-button.tag-button:hover {
+    background: #0056b3; /* Darker blue on hover */
+}
+
+.star-icon {
+    color: gold;
+    margin-left: 5px;
+    font-size: 14px;
+}
+
 .current-date {
     color: white;
     font-size: 16px;
@@ -570,14 +598,56 @@ body {
         width: 100%;
     }
 
-    /* Download button in grid */
+    /* Download button now full-width outside the grid */
     .mobile-video-modal .download-button {
+        width: 100%;
+        height: 40px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+        /* Remove grid positioning properties */
+        grid-column: unset;
+        grid-row: unset;
+    }
+
+    /* Tag button now in grid position */
+    .mobile-video-modal .tag-button {
         grid-column: 2;
         grid-row: 3;
         width: 100%;
+        height: 40px;
+        padding: 0 8px;
         display: flex;
         align-items: center;
-        gap: 4px;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+        background: #007bff;
+    }
+
+    .mobile-video-modal .tag-button {
+        width: 100%;
+        height: 40px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+        background: #007bff; /* Changed from orange to blue for mobile */
+    }
+
+    .mobile-video-modal .tag-button:hover {
+        background: #0056b3; /* Darker blue on hover */
     }
 
     /* Close button */
