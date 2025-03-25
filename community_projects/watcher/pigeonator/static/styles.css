@@ -420,3 +420,38 @@ body {
 .logout-button:hover {
     background-color: #c82333;
 }
+
+.download-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #8e44ad; /* Purple color */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px; /* Match height with other buttons */
+    box-sizing: border-box; /* Ensure padding is included in height */
+}
+
+.download-button:hover {
+    background: #7d3c98; /* Darker purple on hover */
+}
+
+.download-button .material-icons {
+    font-size: 24px; /* 50% larger than default size */
+    color: white;
+}
+
+.review-button, 
+.pigeon-button,
+.tag-button,
+.delete-button,
+.download-button {
+    height: 36px; /* Set uniform height for all buttons */
+    box-sizing: border-box;
+}

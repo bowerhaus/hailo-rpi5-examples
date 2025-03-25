@@ -6,6 +6,8 @@
     <title>Detection Events</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <!-- Add Material Icons font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <div class="temperature-display" id="temperatureDisplay">CPU: --°C</div>
@@ -37,6 +39,9 @@
             </div>
             <div class="button-container">
                 <button class="review-button" id="reviewButton" onclick="toggleReviewState()">Reviewed</button>
+                <button class="download-button" id="downloadButton" onclick="downloadCurrentVideo()">
+                    <i class="material-icons">file_download</i>
+                </button>
                 <div class="center-buttons">
                     <button class="pigeon-button yes" onclick="setPigeonLabel('pigeon')">PIGEON</button>
                     <button class="pigeon-button no" onclick="setPigeonLabel(null)">NOT PIGEON</button>
@@ -603,6 +608,21 @@
             localStorage.clear();
             // Redirect to login page
             window.location.href = '/login';
+        }
+
+        function downloadCurrentVideo() {
+            if (!selectedItem) return;
+            
+            const baseFilename = selectedItem.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
+            
+            // Create a temporary anchor element
+            const a = document.createElement('a');
+            a.href = videoFilename;
+            a.download = baseFilename + '.mp4'; // Set the download filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
     </script>
 </body>

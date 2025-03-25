@@ -303,6 +303,32 @@ body {
     /* No box-shadow to keep it flat */
 }
 
+.download-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #8e44ad; /* Purple color */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px; /* Match height with other buttons */
+    box-sizing: border-box; /* Ensure padding is included in height */
+}
+
+.download-button:hover {
+    background: #7d3c98; /* Darker purple on hover */
+}
+
+.download-button .material-icons {
+    font-size: 24px; /* 50% larger than default size */
+    color: white;
+}
+
 .current-date {
     color: white;
     font-size: 16px;
@@ -420,37 +446,41 @@ body {
     background-color: #c82333;
 }
 
+.toggle-reviewed-button, 
+.direction-button,
+.delete-button,
+.download-button {
+    height: 36px; /* Set uniform height for all buttons */
+    box-sizing: border-box;
+}
+
 @media (max-width: 768px) {
-    /* Stack the panels on mobile */
+    /* Basic mobile layout */
     .split-container {
         flex-direction: column;
     }
+
     .left-panel {
         width: 100%;
-        height: 100vh; /* Take full viewport height */
-        display: flex;
-        flex-direction: column;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
         border-right: none;
     }
-    .metadata-list {
-        width: 100%;
-        flex: 1; /* Take 50% of the left panel */
-        overflow-y: auto;
-    }
+
+    .metadata-list,
     .json-viewer {
         width: 100%;
-        flex: 1; /* Take 50% of the left panel */
+        flex: 1;
         overflow-y: auto;
     }
-    .image-viewer {
-        display: none; /* Hide the desktop video container */
-    }
-    /* Hide all splitters in mobile view */
-    .splitter, 
+
+    .image-viewer,
+    .splitter,
     .vertical-splitter {
         display: none;
     }
-    /* Mobile video popup modal, hidden by default */
+
+    /* Mobile video modal */
     .mobile-video-modal {
         display: none;
         position: fixed;
@@ -460,95 +490,10 @@ body {
         height: 100vh;
         background: rgba(0, 0, 0, 0.9);
         z-index: 2000;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
     }
+
     .mobile-video-modal.active {
         display: flex;
-    }
-    .mobile-video-modal video {
-        width: 100%;
-        max-height: 80%;
-    }
-    .mobile-video-modal .button-container {
-        width: 100%;
-        padding: 10px;
-        display: flex;
-        justify-content: space-around;
-    }
-    /* Updated modal styling: The mobile video pane wraps video and button pane */
-    .mobile-video-modal .mobile-video-pane {
-         display: flex;
-         flex-direction: column;
-         justify-content: space-between;
-         width: 100%;
-         height: 100%;
-    }
-    .mobile-video-modal video {
-         width: 100%;
-         flex-grow: 1;
-    }
-    .mobile-video-modal .button-container {
-         width: 100%;
-         padding: 10px;
-         text-align: center;
-         background: #1a1a1a;
-    }
-    .mobile-video-modal .mobile-video-pane {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
-    }
-    
-    .mobile-video-modal video {
-        width: 100%;
-        flex: 1;
-        max-height: 50vh;
-    }
-    
-    .mobile-video-modal .button-container {
-        padding: 10px;
-        background: #1a1a1a;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .mobile-video-modal .direction-buttons-group {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 5px;
-        width: 100%;
-    }
-    
-    .mobile-video-modal .direction-button {
-        width: 100%;
-        padding: 12px 8px;
-        font-size: 14px;
-    }
-    
-    .mobile-video-modal .toggle-reviewed-button,
-    .mobile-video-modal .delete-button {
-        width: 100%;
-        padding: 12px 8px;
-    }
-    
-    .mobile-close-container {
-        padding: 10px;
-        background: #1a1a1a;
-        border-top: 1px solid #333;
-    }
-    
-    .mobile-close-container .close-button {
-        width: 100%;
-        padding: 12px;
-        background: #444;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-weight: bold;
     }
 
     .mobile-video-modal .mobile-video-pane {
@@ -556,74 +501,130 @@ body {
         flex-direction: column;
         width: 100%;
         height: 100vh;
-        position: fixed;
-        top: 0;
-        left: 0;
     }
-    
-    .mobile-video-modal .vjs-tech {
-        height: 50vh !important; /* Force video height */
-        object-fit: contain;
-    }
-    
+
     .mobile-video-modal video,
     .mobile-video-modal .video-js {
         width: 100%;
-        height: 50vh !important; /* Force container height */
-        position: relative;
+        height: 50vh !important;
+        object-fit: contain;
     }
-    
+
+    /* Button container and groups */
     .mobile-video-modal .button-container {
         padding: 10px;
         background: #1a1a1a;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        height: 50vh;
-        overflow-y: auto;
+        margin-bottom: 0;
     }
-    
+
+    /* Remove close button container entirely */
+    .mobile-close-container {
+        display: none;
+    }
+
+    /* Make sure button container doesn't have extra padding for removed close button */
+    .mobile-video-modal .button-container {
+        padding: 10px;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 0;
+    }
+
+    .mobile-video-modal .direction-buttons-group {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: auto auto auto;
+        gap: 5px;
+        width: 100%;
+    }
+
+    /* Common button styles */
+    .mobile-video-modal .toggle-reviewed-button,
+    .mobile-video-modal .delete-button,
+    .mobile-video-modal .direction-button,
+    .mobile-video-modal .download-button {
+        height: 40px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+    }
+
+    /* Full-width buttons */
+    .mobile-video-modal .toggle-reviewed-button,
+    .mobile-video-modal .delete-button {
+        width: 100%;
+    }
+
+    /* Grid-layout buttons */
+    .mobile-video-modal .direction-button {
+        width: 100%;
+    }
+
+    /* Download button in grid */
+    .mobile-video-modal .download-button {
+        grid-column: 2;
+        grid-row: 3;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Close button */
     .modal-close-btn {
         position: fixed;
         top: 10px;
         right: 10px;
-        width: 40px;
-        height: 40px;
+        width: 32px;  /* Fixed size */
+        height: 32px; /* Same as width to make it circular */
         border-radius: 50%;
         background: rgba(0, 0, 0, 0.5);
         border: 2px solid white;
         color: white;
-        font-size: 24px;
-        cursor: pointer;
+        font-size: 20px; /* Slightly smaller font */
+        z-index: 2001;
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 2001;
         padding: 0;
+        line-height: 1; /* Ensure the × is vertically centered */
     }
 
-    .modal-close-btn:hover {
-        background: rgba(0, 0, 0, 0.8);
-    }
-    
-    .mobile-video-modal .toggle-reviewed-button {
+    /* Mobile header */
+    body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
-        padding: 12px 8px;
-        background: #6c757d;
-        transition: background-color 0.2s;
-        z-index: 2001; /* Ensure button is above other elements */
+        height: 40px;
+        background-color: #333;
+        z-index: 990;
     }
-    
-    .mobile-video-modal .toggle-reviewed-button.reviewed {
-        background: #ff8c00;
+
+    #cpuTemp {
+        position: fixed;
+        top: 8px;
+        left: 10px;
+        color: white;
+        z-index: 995;
     }
-    
+
     .logout-button-container {
         position: fixed;
-        top: 60px;
+        top: 8px;
         right: 10px;
-        z-index: 1000;
+        z-index: 995;
+        display: block;
     }
-    
-    /* Rest of mobile styles remain the same */
 }

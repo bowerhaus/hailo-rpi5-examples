@@ -6,6 +6,7 @@
     <title>Detection Events</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         #cpuTemp {
             position: fixed;
@@ -51,6 +52,9 @@
             <div class="button-container">
                 <!-- New toggle button with id "toggle-reviewed-button" inserted to the left -->
                 <button id="toggle-reviewed-button" class="toggle-reviewed-button" onclick="toggleReviewed()">Reviewed</button>
+                <button class="download-button" id="downloadButton" onclick="downloadCurrentVideo()">
+                    <i class="material-icons">file_download</i>
+                </button>
                 <div class="direction-buttons-group">
                     <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
                     <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
@@ -78,6 +82,9 @@
                     <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
                     <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
                     <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                    <button class="download-button" id="mobileDownloadButton" onclick="downloadCurrentVideo()">
+                        <i class="material-icons">file_download</i>
+                    </button>
                 </div>
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
             </div>
@@ -639,6 +646,21 @@
             localStorage.clear();
             // Redirect to login page
             window.location.href = '/login';
+        }
+
+        function downloadCurrentVideo() {
+            if (!selectedItem) return;
+            
+            const baseFilename = selectedItem.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
+            
+            // Create a temporary anchor element
+            const a = document.createElement('a');
+            a.href = videoFilename;
+            a.download = baseFilename + '.mp4'; // Set the download filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         // Initial setup
