@@ -64,7 +64,7 @@ if __name__ == "__main__":
     user_data.playsound_async(HELLO)
     
     # Start web server first.
-    web_server_kwargs = {'host': '0.0.0.0', 'port': 5000}
+    web_server_kwargs = {'host': '0.0.0.0', 'port': 5001}
     
     # Check if SSL should be used
     if config.get('USE_SSL', False):
