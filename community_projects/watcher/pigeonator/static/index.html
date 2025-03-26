@@ -125,7 +125,8 @@
             currentDirectory = availableDates[newIndex];
             updateDateDisplay();
             clearSelection();
-            lastMetaDataTime = null; // Reset the flag when the date changes
+            document.getElementById('metadataList').innerHTML = ''; // Completely clear the list
+            lastMetaDataTime = null; // Reset the time flag when date changes
             updateMetadataList();
             setupAutoRefresh();
         }
@@ -238,7 +239,11 @@
         function updateMetadataList() {
             console.log('Fetching metadata list for date:', currentDirectory);
             const list = document.getElementById('metadataList');
-            // list.innerHTML = ''; // Remove this line
+            
+            // Show loading indicator
+            if (list.children.length === 0) {
+                list.innerHTML = '<div class="event-item">Loading...</div>';
+            }
 
             // Store the current timestamp before fetching metadata
             const now = new Date();
@@ -249,6 +254,7 @@
 
             let url = `/api/metadata?date=${currentDirectory}`;
             if (lastMetaDataTime === null) {
+                // If null, we want all entries for the date
                 url += `&since=000000`;
             } else if (lastMetaDataTime) {
                 url += `&since=${lastMetaDataTime}`;
@@ -258,7 +264,17 @@
                 .then(response => response.json())
                 .then(files => {
                     const currentSelection = selectedItem;
-                    // list.innerHTML = ''; // Remove this line
+                    
+                    // Clear the loading indicator if present
+                    if (list.children.length === 1 && list.children[0].textContent === 'Loading...') {
+                        list.innerHTML = '';
+                    }
+                    
+                    // Show empty state if no files
+                    if (files.length === 0 && list.children.length === 0) {
+                        list.innerHTML = '<div class="event-item">No events found</div>';
+                        return;
+                    }
                     
                     // Add click handler to the list container for deselection
                     list.onclick = function(e) {
