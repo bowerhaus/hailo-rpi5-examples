@@ -482,6 +482,17 @@ body {
     box-sizing: border-box;
 }
 
+/* Add mobile date navigation styles */
+.mobile-date-nav {
+    background: #333;
+    padding: 8px 0;
+}
+
+/* Add panel date navigation styles - hide by default in desktop view */
+.panel-date-nav {
+    display: none; /* Hide in desktop view */
+}
+
 @media (max-width: 768px) {
     /* Basic mobile layout */
     .split-container {
@@ -697,4 +708,56 @@ body {
         z-index: 995;
         display: block;
     }
+
+    /* Style mobile date navigation */
+    .mobile-video-modal .date-navigation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        background: #333;
+        margin-bottom: 0;
+    }
+
+    .mobile-video-modal .current-date {
+        color: white;
+        font-size: 14px;
+        min-width: 90px;
+        text-align: center;
+    }
+
+    .mobile-video-modal .arrow-button {
+        padding: 5px 12px;
+        font-size: 14px;
+    }
+
+    /* Make panel date nav visible on mobile */
+    .panel-date-nav {
+        display: flex; /* Show in mobile view */
+        justify-content: center;
+        margin-top: 0; /* Changed from 40px to 0 */
+        padding-top: 40px; /* Use padding instead of margin for proper background color extension */
+        padding-bottom: 8px;
+        background: #333;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Hide the mobile modal date nav to avoid duplication */
+    .mobile-date-nav {
+        display: none;
+    }
+}
+
+#cpuTemp {
+    position: fixed;
+    top: 10px;
+    right: 120px; /* Move temperature display to the left to make room for logout button */
+    background: transparent; /* Changed from rgba(0, 0, 0, 0.7) to transparent */
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
 }

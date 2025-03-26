@@ -16,6 +16,12 @@
     </div>
     <div class="split-container">
         <div class="left-panel">
+            <!-- Add date navigation at the top of left panel -->
+            <div class="date-navigation panel-date-nav">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="panelDateDisplay"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
             <div class="metadata-list" id="metadataList"></div>
             <button class="refresh-button" onclick="updateMetadataList()">Refresh</button>
             <div class="vertical-splitter" id="verticalSplitter"></div>
@@ -59,6 +65,12 @@
             <video id="mobileVideoPlayer" class="video-js vjs-default-skin" controls preload="auto">
                 <p class="vjs-no-js">To view this video please enable JavaScript.</p>
             </video>
+            <!-- Add mobile date navigation here -->
+            <div class="date-navigation mobile-date-nav">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="mobileDateDisplay"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
             <div class="button-container">
                 <button id="mobile-review-button" class="review-button" onclick="toggleReviewState()">Reviewed</button>
                 <div class="mobile-center-buttons">
@@ -97,7 +109,13 @@
 
         function updateDateDisplay() {
             const dateElement = document.getElementById('currentDate');
-            dateElement.textContent = formatDisplayDate(currentDirectory);
+            const mobileDateElement = document.getElementById('mobileDateDisplay');
+            const panelDateElement = document.getElementById('panelDateDisplay');
+            const formattedDate = formatDisplayDate(currentDirectory);
+            
+            dateElement.textContent = formattedDate;
+            mobileDateElement.textContent = formattedDate;
+            panelDateElement.textContent = formattedDate;
         }
 
         // New helper to refresh available dates from the server
