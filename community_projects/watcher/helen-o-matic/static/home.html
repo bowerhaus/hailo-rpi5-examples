@@ -82,7 +82,7 @@
       display: flex;
       gap: 10px;
       justify-content: center;
-      visibility: hidden;  /* Initially hidden */
+      visibility: visible;  /* Changed from hidden - show on initial load */
       width: 100%;
       max-width: 100%;
       padding: 10px 0; /* Add padding for scroll area */
@@ -149,7 +149,11 @@
       background-color: rgba(255, 140, 0, 0.1); /* Light orange hover */
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      body {
+        padding-top: 20px; /* Reduced from 60px now that we don't have nav buttons */
+      }
+
       .filter-group {
         gap: 5px;
         transform: scale(0.85);  /* Slightly smaller scale for mobile */
@@ -168,12 +172,16 @@
       }
 
       #dayToggles {
-        margin: 10px auto;
+        margin: 20px auto; /* Reduced top margin since we don't have nav buttons */
+        position: relative; /* Position relative */
+        padding-bottom: 20px; /* Add bottom padding */
       }
     }
   </style>
 </head>
 <body>
+  <!-- Removed the navigation buttons div -->
+
   <div id="dayToggles">
     <div class="filter-group">
       <button class="filter-button" id="weekdaysFilter">Weekdays</button>
@@ -193,8 +201,6 @@
          onload="hideOverlay()" 
          onerror="hideOverlay()" />
     <div id="overlayText"></div>
-    <!-- Updated circular review button with "Review" text -->
-    <a id="reviewBtn" href="/review">Review</a>
   </div>
   <script>
     let refreshTimeout = null;
@@ -214,6 +220,18 @@
 
     function getRandomMessage() {
       return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Keep the navigation functions for potential future use, but they're not visible on the page
+    function navigateToReview() {
+      window.location.href = '/';
+    }
+
+    function handleLogout() {
+      // Clear local storage
+      localStorage.clear();
+      // Redirect to login page
+      window.location.href = '/login';
     }
 
     // Set initial overlay text

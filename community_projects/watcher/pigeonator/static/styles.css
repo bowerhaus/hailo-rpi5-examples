@@ -475,6 +475,39 @@ body {
     padding: 8px 0;
 }
 
+/* List header styles */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #1a1a1a;
+    color: white;
+    height: 42px; /* Match height of video header */
+    box-sizing: border-box;
+}
+
+.list-header-left,
+.list-header-right {
+    flex: 1;
+}
+
+.list-header-title {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+}
+
+.cpu-temp-display {
+    color: white;
+    font-size: 14px;
+}
+
+/* Hide temperature display in desktop view */
+.temperature-display {
+    display: none; /* Hide in desktop view */
+}
+
 /* Mobile styles */
 @media (max-width: 768px) {
     /* Core layout containers */
@@ -641,6 +674,7 @@ body {
         z-index: 990;
     }
 
+    /* Show temperature display in mobile view */
     .temperature-display {
         position: fixed;
         top: 8px;
@@ -648,6 +682,7 @@ body {
         color: white;
         z-index: 995;
         background: transparent;
+        display: block; /* Ensure it's visible in mobile view */
     }
 
     .logout-button-container {
@@ -823,4 +858,71 @@ body {
     .metadata-list {
         margin-top: 0;
     }
+
+    .list-header {
+        display: none !important; /* Use !important to override any other display settings */
+    }
+
+    /* Make sure there's no empty space where the header was */
+    .left-panel {
+        width: 100%;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
+        border-right: none;
+        padding-top: 0; /* Ensure no extra padding at top */
+    }
+
+    .list-header {
+        display: none; /* Hide the list header in mobile view */
+    }
+
+    /* Ensure correct layout for mobile view */
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 40px);
+        overflow-y: auto; /* Allow the panel to scroll */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    /* Fix JSON viewer scrolling */
+    .json-viewer {
+        flex: 0 0 auto; /* Don't allow flex to resize */
+        min-height: 150px;
+        max-height: 40vh;
+        height: auto;
+        overflow-y: scroll !important; /* Force scrolling */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #444;
+    }
+    
+    /* Make metadata list scrollable */
+    .metadata-list {
+        flex: 1 1 auto;
+        overflow-y: visible; /* Let parent container handle scrolling */
+    }
+    
+    /* Ensure vertical splitter is clearly visible */
+    .vertical-splitter {
+        flex: 0 0 auto;
+        height: 10px;
+        background: #aaa;
+        border-top: 1px solid #666;
+        border-bottom: 1px solid #666;
+    }
+}
+
+/* List header styles for desktop view only */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #1a1a1a;
+    color: white;
+    height: 42px;
+    box-sizing: border-box;
 }

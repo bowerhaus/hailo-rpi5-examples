@@ -16,6 +16,14 @@
     </div>
     <div class="split-container">
         <div class="left-panel">
+            <!-- Modify the header bar to remove the title -->
+            <div class="list-header">
+                <div class="list-header-left">
+                    <div class="cpu-temp-display">CPU: -- °C</div>
+                </div>
+                <!-- Remove the Events title -->
+                <div class="list-header-right"></div>
+            </div>
             <!-- Add date navigation at the top of left panel -->
             <div class="date-navigation panel-date-nav">
                 <button class="arrow-button" onclick="changeDate(1)">←</button>
@@ -695,12 +703,16 @@
             .catch(error => console.error('Error deleting files:', error));
         }
 
+        // Update temperature function - update both temperature displays
         function updateTemperature() {
             fetch('/api/cpu_temperature')
                 .then(response => response.json())
                 .then(data => {
                     if (data.temperature) {
+                        // Update both desktop and mobile temperature displays
                         document.getElementById('temperatureDisplay').textContent = 
+                            `CPU: ${data.temperature}°C`;
+                        document.querySelector('.cpu-temp-display').textContent = 
                             `CPU: ${data.temperature}°C`;
                     }
                 })
