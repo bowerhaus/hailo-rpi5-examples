@@ -54,10 +54,10 @@ def handle_login():
     users = load_users()
     # Compare stored hash with hash of provided password
     if username in users and users[username] == hash_password(password):
-        # Set token to expire after 60 minutes
+        # Set token to expire after 12 hours (changed from 60 minutes)
         token = jwt.encode({
             'username': username,
-            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60)
+            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=12)
         }, SECRET_KEY, algorithm='HS256')
         response = jsonify({'token': token})
         response.set_cookie('token', token)

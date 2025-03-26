@@ -76,7 +76,12 @@ def login_page():
 @app.route('/')
 @token_required
 def home():
-    return send_from_directory(app.static_folder, 'home.html')
+    return send_from_directory(app.static_folder, 'index.html')  # Changed from 'home.html' to 'index.html'
+
+@app.route('/clock')
+@token_required
+def clock():
+    return send_from_directory(app.static_folder, 'home.html')  # Now serve home.html from /clock path
 
 @app.route('/review')
 @token_required
