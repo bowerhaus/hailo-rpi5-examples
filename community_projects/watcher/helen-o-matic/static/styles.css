@@ -531,6 +531,11 @@ body {
         padding-top: 0; /* Ensure no extra padding at top */
         overflow-y: hidden; /* Change from auto to hidden to prevent double scrollbars */
         -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        width: 100% !important; /* Force full width */
+        min-width: 100% !important; /* Override min-width */
+        max-width: 100% !important; /* Ensure no max-width constraints */
+        padding: 0 !important; /* Remove padding */
+        box-sizing: border-box !important;
     }
 
     /* Set metadata list to fixed 60% height with scrolling */
@@ -540,9 +545,11 @@ body {
         max-height: 60vh;
         overflow-y: auto !important; /* Force scrolling */
         -webkit-overflow-scrolling: touch;
-        width: 100%;
-        padding: 0;
-        margin: 0;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
     }
 
     /* Fix JSON viewer to take remaining space */
@@ -559,7 +566,9 @@ body {
         border-radius: 4px;
         border: 1px solid #444;
         box-sizing: border-box;
-        width: 100%;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
         white-space: pre; /* Preserve formatting */
         word-wrap: normal; /* Prevent word wrapping */
         font-size: 10px; /* Reduce font size for mobile from 11px to 10px */
@@ -573,13 +582,16 @@ body {
         border-top: 1px solid #666;
         border-bottom: 1px solid #666;
         display: block;
+        width: 100% !important;
     }
 
     /* Ensure refresh button is at the bottom */
     .refresh-button {
-        width: 100%;
-        margin: 0 0 10px 0;
-        box-sizing: border-box;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 0 10px 0 !important;
+        box-sizing: border-box !important;
     }
 
     /* Mobile video modal */
@@ -813,6 +825,11 @@ body {
         background: #333;
         width: 100%;
         box-sizing: border-box;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important; /* Remove margin */
     }
 
     /* Hide the mobile modal date nav to avoid duplication */
@@ -856,6 +873,11 @@ body {
     .metadata-list {
         flex: 1 1 auto;
         overflow-y: visible; /* Let parent container handle scrolling */
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
     }
     
     /* Ensure vertical splitter is clearly visible */
@@ -865,6 +887,7 @@ body {
         background: #aaa;
         border-top: 1px solid #666;
         border-bottom: 1px solid #666;
+        width: 100% !important;
     }
 
     /* Increase the size of list items */
@@ -886,5 +909,13 @@ body {
         line-height: 1 !important; /* Ensure icon doesn't increase line height */
         display: inline-flex !important; /* Better alignment */
         align-items: center !important;
+    }
+
+    /* Ensure no left padding for individual elements */
+    .metadata-list > * {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 }
