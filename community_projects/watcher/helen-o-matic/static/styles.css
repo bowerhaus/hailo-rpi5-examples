@@ -523,26 +523,63 @@ body {
     }
 
     .left-panel {
-        width: 100%;
+        display: flex;
+        flex-direction: column;
         height: calc(100vh - 40px);
         margin-top: 40px;
         border-right: none;
         padding-top: 0; /* Ensure no extra padding at top */
-        overflow-y: auto; /* Allow the panel to scroll */
+        overflow-y: hidden; /* Change from auto to hidden to prevent double scrollbars */
         -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     }
 
-    .metadata-list,
-    .json-viewer {
+    /* Set metadata list to fixed 60% height with scrolling */
+    .metadata-list {
+        flex: 0 0 60%; /* Fixed at 60% height */
+        height: 60%; /* Fallback */
+        max-height: 60vh;
+        overflow-y: auto !important; /* Force scrolling */
+        -webkit-overflow-scrolling: touch;
         width: 100%;
-        flex: 1;
-        overflow-y: auto;
+        padding: 0;
+        margin: 0;
     }
 
-    .image-viewer,
-    .splitter,
+    /* Fix JSON viewer to take remaining space */
+    .json-viewer {
+        flex: 0 0 auto; /* Don't allow flex to resize */
+        height: 35vh; /* Approximately 35% of viewport height */
+        min-height: 150px;
+        max-height: 35vh;
+        overflow-x: auto !important; /* Enable horizontal scrolling */
+        overflow-y: auto !important; /* Enable vertical scrolling */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        box-sizing: border-box;
+        width: 100%;
+        white-space: pre; /* Preserve formatting */
+        word-wrap: normal; /* Prevent word wrapping */
+        font-size: 10px; /* Reduce font size for mobile from 11px to 10px */
+    }
+    
+    /* Ensure vertical splitter is clearly visible and takes minimal space */
     .vertical-splitter {
-        display: none;
+        flex: 0 0 auto;
+        height: 10px;
+        background: #aaa;
+        border-top: 1px solid #666;
+        border-bottom: 1px solid #666;
+        display: block;
+    }
+
+    /* Ensure refresh button is at the bottom */
+    .refresh-button {
+        width: 100%;
+        margin: 0 0 10px 0;
+        box-sizing: border-box;
     }
 
     /* Mobile video modal */
@@ -792,7 +829,7 @@ body {
         display: flex;
         flex-direction: column;
         height: calc(100vh - 40px);
-        overflow-y: auto; /* Allow the panel to scroll */
+        overflow-y: hidden; /* Change from auto to hidden to prevent double scrollbars */
         -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     }
 
@@ -802,12 +839,17 @@ body {
         min-height: 150px;
         max-height: 40vh;
         height: auto;
-        overflow-y: scroll !important; /* Force scrolling */
+        overflow-x: auto !important; /* Enable horizontal scrolling */
+        overflow-y: auto !important; /* Enable vertical scrolling */
         -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         margin-bottom: 10px;
         padding: 10px;
         border-radius: 4px;
         border: 1px solid #444;
+        box-sizing: border-box;
+        white-space: pre; /* Preserve formatting */
+        word-wrap: normal; /* Prevent word wrapping */
+        font-size: 10px; /* Reduce font size for mobile from 11px to 10px */
     }
     
     /* Make metadata list scrollable */
@@ -824,40 +866,25 @@ body {
         border-top: 1px solid #666;
         border-bottom: 1px solid #666;
     }
-}
 
-/* List header styles for desktop view only */
-.list-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: #1a1a1a;
-    color: white;
-    height: 42px;
-    box-sizing: border-box;
-}
-
-/* List header styles - update to center the temperature display */
-.list-header {
-    display: flex;
-    justify-content: space-between; /* Keep the space between layout */
-    align-items: center;
-    padding: 10px;
-    background: #1a1a1a;
-    color: white;
-    height: 42px; /* Match height of video header */
-    box-sizing: border-box;
-}
-
-.list-header-left,
-.list-header-right {
-    flex: 1;
-}
-
-/* Remove the list-header-title style since it's no longer used */
-
-.cpu-temp-display {
-    color: white;
-    font-size: 14px;
+    /* Increase the size of list items */
+    .event-item {
+        padding: 5px 10px !important; /* Increase padding to match taller height */
+        margin: 0 !important;
+        height: 30px !important; /* Increase from 24px to 30px */
+        min-height: 30px !important; /* Ensure minimum height is also updated */
+        max-height: 30px !important; /* Cap the maximum height */
+        font-size: 16px !important; /* Increase font size slightly */
+        white-space: nowrap !important; /* Prevent text wrapping */
+        text-overflow: ellipsis !important; /* Show ellipsis for overflow text */
+    }
+    
+    /* Make star icon smaller and properly aligned */
+    .star-icon {
+        font-size: 11px !important;
+        margin-left: 2px !important;
+        line-height: 1 !important; /* Ensure icon doesn't increase line height */
+        display: inline-flex !important; /* Better alignment */
+        align-items: center !important;
+    }
 }

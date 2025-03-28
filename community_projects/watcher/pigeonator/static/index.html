@@ -262,6 +262,130 @@
         let currentJson = null;  // Store current JSON data
         let lastMetaDataTime = null;
 
+        // Add variables for tracking tap/click events
+        let lastTapTime = 0;
+        let lastTapItem = null;
+        const doubleTapDelay = 300; // ms
+
+        // Modified to handle single tap and double tap differently on mobile
+        function selectEvent(filename, element) {
+            selectedItem = filename;
+            document.querySelectorAll('.event-item').forEach(item => 
+                item.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            // Load and display JSON content
+            fetch(`/media/${filename}`)
+                .then(response => response.json())
+                .then(json => {
+                    displayJson(json);
+                    // Update review button state for both desktop and mobile
+                    const reviewButton = document.getElementById('reviewButton');
+                    const mobileReviewButton = document.getElementById('mobile-review-button');
+                    reviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
+                    mobileReviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
+                    
+                    // Update tag button state for both desktop and mobile
+                    const tagButtons = document.querySelectorAll('.tag-button');
+                    tagButtons.forEach(button => {
+                        button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
+                    });
+                });
+            
+            // On desktop, always load video
+            if (window.innerWidth >= 768) {
+                loadVideoPlayer(filename);
+            }
+            // On mobile, do nothing here - video will be loaded on double tap
+        }
+
+        // New function to load video player
+        function loadVideoPlayer(filename) {
+            const baseFilename = filename.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
+            
+            if (window.innerWidth < 768) {
+                // Mobile: load video into modal popup
+                const modal = document.getElementById('mobileVideoModal');
+                modal.classList.add('active');
+                const mobileVideoPlayer = videojs('mobileVideoPlayer');
+                mobileVideoPlayer.pause();
+                mobileVideoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                mobileVideoPlayer.load();
+                
+                // Setup handlers for fullscreen behavior
+                mobileVideoPlayer.on('play', function() {
+                    if (!mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.requestFullscreen();
+                    }
+                });
+                
+                mobileVideoPlayer.on('pause', function() {
+                    if (mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.exitFullscreen();
+                    }
+                });
+
+                mobileVideoPlayer.on('canplay', function() {
+                    mobileVideoPlayer.play();
+                });
+                
+                mobileVideoPlayer.on('error', function(e) {
+                    console.error('Mobile video error:', mobileVideoPlayer.error());
+                });
+            } else {
+                // Desktop: use existing video player
+                const videoPlayer = videojs('videoPlayer');
+                videoPlayer.pause();
+                videoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                videoPlayer.load();
+
+                // Check if video can play
+                videoPlayer.on('canplay', function() {
+                    videoPlayer.play();
+                });
+
+                // Handle error if video cannot be loaded
+                videoPlayer.on('error', function(e) {
+                    console.error('Video error:', videoPlayer.error());
+                });
+            }
+        }
+
+        // New handler for list item clicks to support double tap
+        function handleListItemClick(file, item, e) {
+            e.stopPropagation();
+            
+            // On desktop, just select normally
+            if (window.innerWidth >= 768) {
+                selectEvent(file, item);
+                return;
+            }
+
+            // On mobile, implement double-tap detection
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            
+            // Check if it's a double tap (same item within delay)
+            if (tapLength < doubleTapDelay && lastTapItem === file) {
+                // Double tap - load the video
+                loadVideoPlayer(file);
+                lastTapTime = 0; // Reset tap tracking
+            } else {
+                // Single tap - just select the item and show JSON
+                selectEvent(file, item);
+                // Track this tap for potential double tap
+                lastTapTime = currentTime;
+                lastTapItem = file;
+            }
+        }
+
         function updateMetadataList() {
             console.log('Fetching metadata list for date:', currentDirectory);
             const list = document.getElementById('metadataList');
@@ -349,10 +473,10 @@
                                 }
                                 
                                 item.setAttribute('data-filename', file);
-                                item.onclick = (e) => {
-                                    e.stopPropagation();
-                                    selectEvent(file, item);
-                                };
+                                
+                                // Use the new handler for both single and double taps
+                                item.onclick = (e) => handleListItemClick(file, item, e);
+                                
                                 // Prepend the new item to the list
                                 list.insertBefore(item, list.firstChild);
                             }
@@ -433,87 +557,6 @@
             const mobileVideoPlayer = videojs('mobileVideoPlayer');
             mobileVideoPlayer.pause();
             mobileVideoPlayer.reset();
-        }
-
-        function selectEvent(filename, element) {
-            selectedItem = filename;
-            document.querySelectorAll('.event-item').forEach(item => 
-                item.classList.remove('selected'));
-            element.classList.add('selected');
-            
-            // Load and display JSON content
-            fetch(`/media/${filename}`)
-                .then(response => response.json())
-                .then(json => {
-                    displayJson(json);
-                    // Update review button state for both desktop and mobile
-                    const reviewButton = document.getElementById('reviewButton');
-                    const mobileReviewButton = document.getElementById('mobile-review-button');
-                    reviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
-                    mobileReviewButton.innerHTML = `Reviewed${json.reviewed ? ' ✓' : ''}`;
-                    
-                    // Update tag button state for both desktop and mobile
-                    const tagButtons = document.querySelectorAll('.tag-button');
-                    tagButtons.forEach(button => {
-                        button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
-                    });
-                });
-            
-            const baseFilename = filename.replace('.json', '');
-            const videoFilename = `/media/${baseFilename}.mp4`;
-            
-            if (window.innerWidth < 768) {
-                // Mobile: load video into modal popup
-                const modal = document.getElementById('mobileVideoModal');
-                modal.classList.add('active');
-                const mobileVideoPlayer = videojs('mobileVideoPlayer');
-                mobileVideoPlayer.pause();
-                mobileVideoPlayer.src({
-                    src: videoFilename,
-                    type: 'video/mp4'
-                });
-                mobileVideoPlayer.load();
-                
-                // Setup handlers for fullscreen behavior
-                mobileVideoPlayer.on('play', function() {
-                    if (!mobileVideoPlayer.isFullscreen()) {
-                        mobileVideoPlayer.requestFullscreen();
-                    }
-                });
-                
-                mobileVideoPlayer.on('pause', function() {
-                    if (mobileVideoPlayer.isFullscreen()) {
-                        mobileVideoPlayer.exitFullscreen();
-                    }
-                });
-
-                mobileVideoPlayer.on('canplay', function() {
-                    mobileVideoPlayer.play();
-                });
-                
-                mobileVideoPlayer.on('error', function(e) {
-                    console.error('Mobile video error:', mobileVideoPlayer.error());
-                });
-            } else {
-                // Desktop: use existing video player
-                const videoPlayer = videojs('videoPlayer');
-                videoPlayer.pause();
-                videoPlayer.src({
-                    src: videoFilename,
-                    type: 'video/mp4'
-                });
-                videoPlayer.load();
-
-                // Check if video can play
-                videoPlayer.on('canplay', function() {
-                    videoPlayer.play();
-                });
-
-                // Handle error if video cannot be loaded
-                videoPlayer.on('error', function(e) {
-                    console.error('Video error:', videoPlayer.error());
-                });
-            }
         }
 
         function showCurrentImage() {
