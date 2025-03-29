@@ -21,8 +21,8 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/pigeonator",
             "program": "${workspaceFolder}/community_projects/watcher/pigeonator/pigeonator.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
-            //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "testdata/two_pigeons.mp4"]
+            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v4.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
+            //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v4.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "testdata/pond_back1.mp4"]
         }
     ]
 }
