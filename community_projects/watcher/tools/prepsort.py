@@ -140,7 +140,7 @@ def process_directory(root_dir, output_dir, filter_criteria, verbose=False):
                     continue
                 
                 # Check if it matches the filter criteria
-                if matches_criteria(json_data, filter_criteria):
+                if json_data and matches_criteria(json_data, filter_criteria):
                     # Find the corresponding MP4 file
                     base_name = os.path.splitext(filename)[0]
                     mp4_filename = f"{base_name}.mp4"

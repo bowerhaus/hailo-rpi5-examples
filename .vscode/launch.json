@@ -25,13 +25,22 @@
             //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "testdata/two_pigeons.mp4"]
         },
         {
-            "name": "Python: Run Prepsort",
+            "name": "Python: Run Prepsort (helen-o-matic)",
             "type": "debugpy",
             "request": "launch",
             "cwd": "${workspaceFolder}/community_projects/watcher/tools",
             "program": "${workspaceFolder}/community_projects/watcher/tools/prepsort.py",
             "console": "integratedTerminal",
-            "args": ["--verbose", "--input", "input/pigeonator", "--output", "output/pigeonator", "--config", "prepsort-config.json", "--clean"]
+            "args": ["--verbose", "--input", "input/helen-o-matic", "--output", "output/helen-o-matic", "--config", "prepsort-helen-config.json", "--clean"]
+        },
+        {
+            "name": "Python: Run Prepsort (pigeonator)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/tools",
+            "program": "${workspaceFolder}/community_projects/watcher/tools/prepsort.py",
+            "console": "integratedTerminal",
+            "args": ["--verbose", "--input", "input/pigeonator", "--output", "output/pigeonator", "--config", "prepsort-pigeonator-config.json", "--clean"]
         }
     ]
 }
