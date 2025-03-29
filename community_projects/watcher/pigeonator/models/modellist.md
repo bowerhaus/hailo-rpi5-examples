@@ -14,4 +14,7 @@ The B models are single catgory models with a new training set based on images c
 The v2 model works well at identifying pigeons but produced false positives for people and dogs walking in the area. It's possible this might be better than first though since it was later discovered that a much higher confidence level (than the original 0.3) could be used.
 
 ### pigeonator-mk3-b.v3
-The v3 model has addition images with people and dogs that are classified as background in order to make the model more resilient against false positives. In use, the confidence level was upped from 0.4 to 0.8. This performs well for most intrusions and for pigeons at the front of the pond and on the lawn. Not so good in the shady areas at the back.
+The v3 model has additional images with people and dogs that are classified as background in order to make the model more resilient against false positives. In use, the confidence level was upped from 0.4 to 0.8. This performs well for most intrusions and for pigeons at the front of the pond and on the lawn. Not so good in the shady areas at the back.
+
+### pigeonator-mk3-b.v4
+The v4 model has more negative images showing people (sally & me) and dogs and clippy in the scene. Also added more pigeon images for poor (reflective) lighting and pigeons behind the pond. The videos were prepsorted using prepsort.py on 23/03/25. In use, it seems to reject people and clippy better than v3. Not sure if the pigeon recognition is improved but will test.
