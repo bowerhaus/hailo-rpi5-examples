@@ -11,8 +11,8 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/helen-o-matic",
             "program": "${workspaceFolder}/community_projects/watcher/helen-o-matic/helen_o_matic.py",
             "console": "integratedTerminal",
-            //"args": ["--use-frame", "--input", "rpi"]
-            "args": ["--use-frame", "--input", "testdata/helen_out.mp4"]
+            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v6.yolov8.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
+            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v6.yolov8.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "output/20250331/20250331_100834_596_dog_x2_220.mp4"]
         },
         {
             "name": "Python: Run Pigeonator",
@@ -21,7 +21,7 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/pigeonator",
             "program": "${workspaceFolder}/community_projects/watcher/pigeonator/pigeonator.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
+            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8p.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
             //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v3i.yolov8.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "testdata/two_pigeons.mp4"]
         }
     ]
