@@ -1,0 +1,8 @@
+I want to create a general purpose tool to sort ai training data prior to training. the tool s is to be written in python and will run under windows. The input to the prepsort tool is an output directory that contains subdirectories titled in YYYY-MM-DD format. within each of these date labelled directories are a number of JSON files containing a flat hierarch of labels and values. The filenames are based on a timestamp of the form YYYMMDD_HHMMSS_NNN_XXXXXXXX. The X portion of these mes could be anything. Alongside JSON in the directory are MP4 files and possibly JPG files with matching timestamp names. 
+
+The purpose of the tool is to go through all of the JSON files and match them based on filter criteria I will give you in a minute. For all files that match take the equivalent MP4 video file and copy it to an output directory. These matched files will be used for ai model training.
+
+the filter criteria are taken from a JSON file "prepsort-config.json". This is a JSON file containing the labels and values that should be considered for a match.
+
+The prepsort program should take command line args for the root of the original output directory being scanned and for the target folder where the MP4 files should be copies.
+
