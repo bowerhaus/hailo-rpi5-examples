@@ -80,10 +80,8 @@ TEST_CASES = [
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "two_pigeons.mp4")),
         app_type="pigeonator",
         expected_metadata={
-            "class": "pigeon"
-        },
-        expected_classes={
-            "pigeon": 80.0     
+            "class": "pigeon",
+            "max_instances": 2
         },
         custom_validation=validate_pigeon_deterrent
     )
