@@ -12,6 +12,7 @@ import json
 from logger_config import logger
 from gstreamer_helenomatic_app import GStreamerHelenOMaticApp  # Updated import
 from geometry import Point2D
+import hailo
 
 import threading
 from web_server import app as web_app
@@ -35,8 +36,12 @@ class HelenOMatic(WatcherBase):
         # Set logger to use the helen-o-matic logger
         self.logger = logger
         
-        # Helen-specific configuration
-        self.helen_dogs_threshold = config.get('HELEN_DOGS_THRESHOLD', 2)
+        # Counters for additional classes
+        self.helen_out_count = 0
+        self.helen_back_count = 0
+        self.person_count = 0
+        self.dog_count = 0  # Add counter for dog class
+        self.total_active_frames = 0
 
     def create_speech_files(self):
         super().create_speech_files()
@@ -45,6 +50,38 @@ class HelenOMatic(WatcherBase):
         tts.save(HELEN_OUT_ALERT)
         tts = gtts.gTTS(f"Helen is back")
         tts.save(HELEN_BACK_ALERT)
+
+    def active_tracking(self, class_detections):
+        """Override active_tracking to count additional classes"""
+        # Call the parent method first
+        super().active_tracking(class_detections)
+        
+        # Increment total frames counter
+        self.total_active_frames += 1
+        
+        # Using all_detections from base class (which is populated in the callback)
+        if hasattr(self, 'all_detections') and self.all_detections:
+            # Create a set to track which classes we've already counted in this frame
+            counted_classes = set()
+            
+            for detection in self.all_detections:
+                label = detection.get_label()
+                confidence = detection.get_confidence()
+                
+                # Only count each class once per frame using the set
+                if confidence > self.class_match_confidence and label not in counted_classes:
+                    if label == "helen_out":
+                        self.helen_out_count += 1
+                        counted_classes.add(label)
+                    elif label == "helen_back":
+                        self.helen_back_count += 1
+                        counted_classes.add(label)
+                    elif label == "person":
+                        self.person_count += 1
+                        counted_classes.add(label)
+                    elif label == "dog":
+                        self.dog_count += 1
+                        counted_classes.add(label)
 
     def create_metadata(self, root_filename, event_seconds):
         metadata = super().create_metadata(root_filename, event_seconds)
@@ -59,13 +96,46 @@ class HelenOMatic(WatcherBase):
         elif estimated_label == "HELEN_BACK":
             self.playsound_async(HELEN_BACK_ALERT)
 
+        # Calculate percentages for additional classes
+        total_frames = max(self.total_active_frames, 1)  # Avoid division by zero
+        helen_out_percent = round((self.helen_out_count / total_frames) * 100, 1)
+        helen_back_percent = round((self.helen_back_count / total_frames) * 100, 1)
+        person_percent = round((self.person_count / total_frames) * 100, 1)
+        dog_percent = round((self.dog_count / total_frames) * 100, 1)  # Calculate dog percentage
+
         new_metadata = {
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
-            "label": estimated_label
+            "label": estimated_label,
+            "helen_out_percent": helen_out_percent,
+            "helen_back_percent": helen_back_percent,
+            "person_percent": person_percent,
+            "dog_percent": dog_percent  # Add dog percentage to metadata
         }
         metadata.update(new_metadata)
         return metadata
+    
+    def stop_active_tracking(self):
+        """Override to add reporting for additional classes"""
+        # Calculate percentages before calling super's stop_active_tracking
+        total_frames = max(self.total_active_frames, 1)  # Avoid division by zero
+        helen_out_percent = round((self.helen_out_count / total_frames) * 100, 1)
+        helen_back_percent = round((self.helen_back_count / total_frames) * 100, 1)
+        person_percent = round((self.person_count / total_frames) * 100, 1)
+        dog_percent = round((self.dog_count / total_frames) * 100, 1)  # Calculate dog percentage
+        
+        # Log the percentages
+        logger.info(f"{self.class_to_track.upper()} GONE with additional class percentages: Helen Out: {helen_out_percent}%, Helen Back: {helen_back_percent}%, Person: {person_percent}%, Dog: {dog_percent}%")
+        
+        # Call the parent class method to handle the rest of the tracking stop
+        super().stop_active_tracking()
+        
+        # Reset our counters after parent has finished
+        self.helen_out_count = 0
+        self.helen_back_count = 0
+        self.person_count = 0
+        self.dog_count = 0  # Reset dog counter
+        self.total_active_frames = 0
     
     def root_filename(self):
         avg_detection_count = self.get_average_detection_instance_count()
@@ -89,7 +159,7 @@ class HelenOMatic(WatcherBase):
     
     def estimate_label(self, direction, max_instances, avg_detection_count):
         """
-        Estimate the label based on the given direction, max instances, and average detection count.
+        Estimate the label based on the given direction and class percentages.
         Args:
             direction (int): The angle in degrees.
             max_instances (int): The maximum number of instances detected in a frame.
@@ -97,13 +167,36 @@ class HelenOMatic(WatcherBase):
         Returns:
             str: The estimated label.
         """
-        number_of_dogs = round(avg_detection_count)
-        if number_of_dogs >= self.helen_dogs_threshold:
-            named_direction = self.get_named_direction(direction)
-            if named_direction == "OUT":
-                return "HELEN_OUT"
-            if named_direction == "BACK":
-                return "HELEN_BACK"
+        # Get the named direction
+        named_direction = self.get_named_direction(direction)
+        
+        # Calculate percentages for each class
+        total_frames = max(self.total_active_frames, 1)  # Avoid division by zero
+        helen_out_percent = (self.helen_out_count / total_frames) * 100
+        helen_back_percent = (self.helen_back_count / total_frames) * 100
+        person_percent = (self.person_count / total_frames) * 100
+        dog_percent = (self.dog_count / total_frames) * 100  # Include dog percentage
+        
+        # Simple ranking of percentages
+        all_percentages = {
+            "helen_out": helen_out_percent,
+            "helen_back": helen_back_percent,
+            "person": person_percent,
+            "dog": dog_percent  # Add dog to percentages dictionary
+        }
+        
+        # Find the class with the highest percentage
+        highest_class = max(all_percentages, key=all_percentages.get)
+        highest_percent = all_percentages[highest_class]
+        
+        # If the direction is OUT and helen_out has the highest percentage
+        if named_direction == "OUT" and highest_class == "helen_out" and highest_percent > 0:
+            return "HELEN_OUT"
+            
+        # If the direction is BACK and helen_back has the highest percentage
+        if named_direction == "BACK" and highest_class == "helen_back" and highest_percent > 0:
+            return "HELEN_BACK"
+            
         return None
 
 

@@ -83,6 +83,9 @@ class WatcherBase(app_callback_class):
         self.active_timestamp = None
         self.initial_max_confidence = 0.0
 
+        # Add a field to store all detections for subclasses to use
+        self.all_detections = []
+
     def create_speech_files(self):
         tts = gtts.gTTS(f"Its a {self.class_to_track.upper()}")
         tts.save(CLASS_ALERT)
@@ -355,6 +358,9 @@ def watcher_base_callback(pad, info, user_data):
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
+    
+    # Store all detections for subclasses to use
+    user_data.all_detections = detections
 
     # Filter detections that match class_to_track and have confidence greater than class_match_confidence
     class_detections = [

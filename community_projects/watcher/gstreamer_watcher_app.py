@@ -231,6 +231,7 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         pipeline_string = (
             f'{source_pipeline} ! '
             f'{detection_pipeline_wrapper} ! '
+            # f'{tracker_pipeline} ! '
             f'{user_callback_pipeline} ! '
             f'{display_pipeline}'
         )
