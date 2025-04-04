@@ -38,11 +38,14 @@ TEST_CASES = [
         app_type="helen-o-matic",
         expected_metadata={
             "class": "dog",
-            "label": "HELEN_OUT"
+            "label": "HELEN_OUT",
+            "direction": {"range": [25, 100]},
+            "named_direction": "OUT"
         },
         expected_classes={
-            "helen_out": 50.0,  
-            "dog": 50.0     
+            "helen_out": {"ge": 50.0}, 
+            "person": {"lt": 50.0}, 
+            "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
     ),
@@ -52,11 +55,14 @@ TEST_CASES = [
         app_type="helen-o-matic",
         expected_metadata={
             "class": "dog",
-            "label": "HELEN_BACK"
+            "label": "HELEN_BACK",
+            "direction": {"range": [205, 280]},
+            "named_direction": "BACK"
         },
         expected_classes={
-            "helen_back": 50.0,  
-            "dog": 50.0   
+            "helen_back": {"ge": 50.0},  
+            "person": {"lt": 50.0}, 
+            "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
     ),
@@ -69,8 +75,8 @@ TEST_CASES = [
             "label": None
         },
         expected_classes={
-            "person": 50.0,     
-            "dog": 40.0      
+            "person": {"ge": 50.0},
+            "dog": {"ge": 47}
         }
     ),
     
@@ -81,7 +87,11 @@ TEST_CASES = [
         app_type="pigeonator",
         expected_metadata={
             "class": "pigeon",
-            "max_instances": 2
+            "max_instances": {"range": [1, 3]},
+            "event_seconds": {"gt": 5}
+        },
+        expected_classes={
+            "pigeon": {"ge": 70.0}
         },
         custom_validation=validate_pigeon_deterrent
     )

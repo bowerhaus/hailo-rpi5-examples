@@ -15,6 +15,7 @@ from typing import List, Dict, Any, Optional, Callable
 # Add parent directory to path to import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from logger_config import logger
+from comparison_utils import ValueValidator
 
 # Constants
 DEFAULT_TIMEOUT = 60  # Default timeout in seconds for test execution
@@ -30,7 +31,7 @@ class TestCase:
     input_file: str
     app_type: str  # 'helen-o-matic' or 'pigeonator'
     expected_metadata: Dict[str, Any] = field(default_factory=dict)
-    expected_classes: Dict[str, float] = field(default_factory=dict)
+    expected_classes: Dict[str, Any] = field(default_factory=dict)
     timeout: int = DEFAULT_TIMEOUT
     custom_validation: Optional[Callable] = None
     
@@ -298,26 +299,28 @@ class TestRunner:
             except jsonschema.exceptions.ValidationError as e:
                 result["errors"].append(f"Schema validation error: {e}")
         
-        # Check expected metadata values
+        # Check expected metadata values using validators
         for key, expected_value in test_case.expected_metadata.items():
+            validator = ValueValidator.create(expected_value)
+            
             if key not in metadata:
                 result["errors"].append(f"Expected key '{key}' not found in metadata")
-            elif metadata[key] != expected_value:
-                result["errors"].append(
-                    f"Value mismatch for key '{key}': "
-                    f"expected '{expected_value}', got '{metadata[key]}'"
-                )
+            else:
+                is_valid, error_msg = validator.validate(metadata[key])
+                if not is_valid:
+                    result["errors"].append(f"Value mismatch for key '{key}': {error_msg}")
         
-        # Check expected class percentages
-        for class_name, min_percentage in test_case.expected_classes.items():
+        # Check expected class percentages using validators
+        for class_name, expected_value in test_case.expected_classes.items():
             key = f"{class_name}_percent"
+            validator = ValueValidator.create(expected_value)
+            
             if key not in metadata:
                 result["errors"].append(f"Expected class percentage '{key}' not found in metadata")
-            elif metadata[key] < min_percentage:
-                result["errors"].append(
-                    f"Class percentage too low for '{key}': "
-                    f"expected at least {min_percentage}%, got {metadata[key]}%"
-                )
+            else:
+                is_valid, error_msg = validator.validate(metadata[key])
+                if not is_valid:
+                    result["errors"].append(f"Class percentage invalid for '{key}': {error_msg}")
         
         # Run custom validation if provided
         if test_case.custom_validation:
