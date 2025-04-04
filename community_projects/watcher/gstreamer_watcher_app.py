@@ -266,7 +266,11 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
     def on_eos(self):
         """Handle end-of-stream event."""
         self.user_data.on_eos()
-        self.pipeline.set_state(Gst.State.PAUSED)
+        self.pipeline.set_state(Gst.State.NULL)
+
+        import sys
+        os._exit(0)
+
 
     def run(self):
         """Run the watcher application."""

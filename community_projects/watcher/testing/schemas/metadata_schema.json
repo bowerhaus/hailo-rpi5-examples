@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Watcher Application Metadata",
+  "type": "object",
+  "required": [
+    "filename",
+    "class",
+    "initial_confidence",
+    "timestamp",
+    "max_instances",
+    "average_instances",
+    "event_seconds",
+    "video_truncated",
+    "reviewed"
+  ],
+  "properties": {
+    "filename": {
+      "type": "string",
+      "description": "Base filename for the detection event"
+    },
+    "class": {
+      "type": "string",
+      "description": "The class that was being tracked"
+    },
+    "initial_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Initial confidence of the detection"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{8}_\\d{6}(_\\d{3})?$",
+      "description": "Timestamp of the detection event"
+    },
+    "max_instances": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum number of instances detected"
+    },
+    "average_instances": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Average number of instances detected"
+    },
+    "event_seconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Duration of the event in seconds"
+    },
+    "video_truncated": {
+      "type": "boolean",
+      "description": "Whether the video was truncated"
+    },
+    "reviewed": {
+      "type": "boolean",
+      "description": "Whether the detection has been reviewed"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "class": { "const": "person" }
+        }
+      },
+      "then": {
+        "properties": {
+          "direction": { "type": "integer" },
+          "named_direction": { "type": "string" },
+          "label": { "type": ["string", "null"] },
+          "helen_out_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+          "helen_back_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+          "person_percent": { "type": "number", "minimum": 0, "maximum": 100 },
+          "dog_percent": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "class": { "const": "pigeon" }
+        }
+      },
+      "then": {
+        "properties": {
+          "direction": { "type": "integer" }
+        }
+      }
+    }
+  ]
+}

@@ -175,14 +175,12 @@ class HelenOMatic(WatcherBase):
         helen_out_percent = (self.helen_out_count / total_frames) * 100
         helen_back_percent = (self.helen_back_count / total_frames) * 100
         person_percent = (self.person_count / total_frames) * 100
-        dog_percent = (self.dog_count / total_frames) * 100  # Include dog percentage
         
         # Simple ranking of percentages
         all_percentages = {
             "helen_out": helen_out_percent,
             "helen_back": helen_back_percent,
-            "person": person_percent,
-            "dog": dog_percent  # Add dog to percentages dictionary
+            "person": person_percent
         }
         
         # Find the class with the highest percentage

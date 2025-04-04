@@ -35,7 +35,20 @@ class WatcherBase(app_callback_class):
         self.show_detection_boxes = config.get('SHOW_DETECTION_BOXES', True)
         self.save_detection_video = config.get('SAVE_DETECTION_VIDEO', True)
         self.frame_rate = config.get('FRAME_RATE', 30)
-        self.output_directory = config.get('OUTPUT_DIRECTORY', 'output')
+        
+        # Check environment variable for output directory first, then config
+        self.output_directory = os.environ.get(
+            'WATCHER_OUTPUT_DIRECTORY',  # First check environment variable
+            config.get('OUTPUT_DIRECTORY', 'output')  # Fall back to config or default
+        )
+        
+        # Ensure the output directory is an absolute path
+        if not os.path.isabs(self.output_directory):
+            # If it's a relative path, make it absolute based on current working directory
+            self.output_directory = os.path.abspath(self.output_directory)
+            
+        self.logger.info(f"Using output directory: {self.output_directory}")
+        
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)
         self.daytime_only = config.get('DAYTIME_ONLY', False)
 
