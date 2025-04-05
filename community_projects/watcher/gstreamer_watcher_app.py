@@ -190,6 +190,13 @@ class GStreamerWatcherApp(GStreamerDetectionApp):
         else:  # hailo8l
             self.hef_path = os.path.join(self.current_path, '../resources/yolov8s_h8l.hef')
 
+        # Extract just the filename part from the HEF path
+        hef_model_name = os.path.basename(self.hef_path)
+        # Pass the HEF model name to the user_data object if it has the attribute
+        if hasattr(user_data, 'hef_model'):
+            user_data.hef_model = hef_model_name
+            logger.info(f"Using HEF model: {hef_model_name}")
+
         # Set the post-processing shared object file
         self.post_process_so = os.path.join(self.current_path, '../resources/libyolo_hailortpp_postprocess.so')
         self.post_function_name = "filter_letterbox"

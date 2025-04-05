@@ -51,6 +51,9 @@ class WatcherBase(app_callback_class):
         
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)
         self.daytime_only = config.get('DAYTIME_ONLY', False)
+        
+        # Add field for HEF model name
+        self.hef_model = "unknown"
 
         self.create_speech_files()
         
@@ -251,6 +254,7 @@ class WatcherBase(app_callback_class):
         """Create metadata dictionary."""
         metadata = {
             "filename": root_filename,
+            "hef_model": self.hef_model,  # Include the HEF model name
             "class": self.class_to_track,
             "initial_confidence": round(self.initial_max_confidence, 2),
             "timestamp": self.active_timestamp,
