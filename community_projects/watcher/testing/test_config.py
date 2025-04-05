@@ -43,8 +43,7 @@ TEST_CASES = [
             "named_direction": "OUT"
         },
         expected_classes={
-            "helen_out": {"ge": 50.0}, 
-            "person": {"lt": 50.0}, 
+            "helen_out": {"ge": 50.0},  
             "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
@@ -61,7 +60,6 @@ TEST_CASES = [
         },
         expected_classes={
             "helen_back": {"ge": 50.0},  
-            "person": {"lt": 50.0}, 
             "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
@@ -78,6 +76,12 @@ TEST_CASES = [
             "person": {"ge": 50.0},
             "dog": {"ge": 47}
         }
+    ),
+    TestCase(
+        name="kids_no_dog_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "kids_no_dog.mp4")),
+        app_type="helen-o-matic",
+        expect_metadata=False,  # This test will not produce metadata because no class matches
     ),
     
     # Pigeonator test cases

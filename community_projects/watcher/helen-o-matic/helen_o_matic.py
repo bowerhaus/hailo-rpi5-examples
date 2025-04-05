@@ -183,17 +183,13 @@ class HelenOMatic(WatcherBase):
             "person": person_percent
         }
         
-        # Find the class with the highest percentage
-        highest_class = max(all_percentages, key=all_percentages.get)
-        highest_percent = all_percentages[highest_class]
+        # If the direction is BACK and helen_back has the highest percentage
+        if named_direction == "BACK" and helen_back_percent > 30:
+            return "HELEN_BACK"
         
         # If the direction is OUT and helen_out has the highest percentage
-        if named_direction == "OUT" and highest_class == "helen_out" and highest_percent > 0:
+        if named_direction == "OUT" and helen_out_percent > 30:
             return "HELEN_OUT"
-            
-        # If the direction is BACK and helen_back has the highest percentage
-        if named_direction == "BACK" and highest_class == "helen_back" and highest_percent > 0:
-            return "HELEN_BACK"
             
         return None
 

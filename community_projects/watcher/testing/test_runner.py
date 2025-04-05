@@ -34,6 +34,7 @@ class TestCase:
     expected_classes: Dict[str, Any] = field(default_factory=dict)
     timeout: int = DEFAULT_TIMEOUT
     custom_validation: Optional[Callable] = None
+    expect_metadata: bool = True  # Flag to indicate if metadata should be generated
     
     def __post_init__(self):
         # Ensure input file exists
@@ -227,8 +228,19 @@ class TestRunner:
             
             # Find the metadata files produced
             metadata_files = glob.glob(os.path.join(output_dir, "*.json"))
+            
+            # If metadata is not expected for this test, it's a success if no files were created
+            if not test_case.expect_metadata:
+                if not metadata_files:
+                    logger.info(f"No metadata files found as expected for test {test_case.name}")
+                    result["success"] = True
+                else:
+                    result["errors"].append(f"Metadata files were found when none were expected: {', '.join(metadata_files)}")
+                return result
+            
+            # If we get here, we're expecting metadata files
             if not metadata_files:
-                raise FileNotFoundError(f"No metadata files found in {output_dir}")
+                raise FileNotFoundError(f"No metadata files found in {output_dir} but metadata was expected")
             
             # Get the latest metadata file
             latest_metadata_file = max(metadata_files, key=os.path.getctime)
@@ -355,7 +367,7 @@ class TestRunner:
                 os.path.dirname(os.path.dirname(__file__)),
                 "helen-o-matic",
                 "models",
-                "helen-o-matic.v6.yolov8p.hef"
+                "helen-o-matic.v7.yolov8.hef"
             )
         elif app_type == "pigeonator":
             return os.path.join(

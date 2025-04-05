@@ -11,6 +11,8 @@ The testing framework allows you to:
 3. Check for specific class percentages and expected behaviors
 4. Aggregate test results and produce a summary
 5. Filter test cases based on specific criteria
+6. Handle cases where no metadata is expected to be generated
+7. Use the `expect_metadata` flag to specify whether metadata is expected for a test case
 
 ## Directory Structure
 
@@ -31,7 +33,7 @@ testing/
 
 ## Getting Started
 
-1. Place your test video files in the `testdata` directory.
+1. Place your test video files in the `test_data` directory.
 2. Update `test_config.py` to add your test cases.
 3. Run the tests.
 
@@ -56,6 +58,12 @@ To filter test cases based on criteria:
 python -m testing.test_runner --filter "app_type=helen-o-matic"
 ```
 
+To run a single test by name:
+
+```
+python -m testing.test_runner --test-name "helen_out_test"
+```
+
 ## Defining Test Cases
 
 Test cases are defined in `test_config.py`. Each test case specifies:
@@ -67,6 +75,7 @@ Test cases are defined in `test_config.py`. Each test case specifies:
 - `expected_classes`: Minimum percentage values for specific classes
 - `timeout`: Maximum time in seconds to wait for the test to complete (default: 60)
 - `custom_validation`: An optional function for additional validation
+- `expect_metadata`: A flag indicating whether metadata is expected to be generated (default: True)
 
 Example test case:
 
@@ -82,7 +91,8 @@ TestCase(
     expected_classes={
         "helen_out": 50.0,  # Expect at least 50% helen_out
         "person": 80.0      # Expect at least 80% person
-    }
+    },
+    expect_metadata=True
 )
 ```
 
@@ -106,7 +116,7 @@ Then assign this function to the `custom_validation` parameter of your test case
 
 To add a new test case:
 
-1. Add your test video to the `testdata` directory
+1. Add your test video to the `test_data` directory
 2. Define a new `TestCase` in `test_config.py`
 3. Add any custom validation functions needed
 

@@ -11,8 +11,8 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/helen-o-matic",
             "program": "${workspaceFolder}/community_projects/watcher/helen-o-matic/helen_o_matic.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v6.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
-            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v6.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "test_data/helen_back.mp4"]
+            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
+            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "test_data/helen_back.mp4"]
         },
         {
             "name": "Python: Run Pigeonator",

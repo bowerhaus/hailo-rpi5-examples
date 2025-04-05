@@ -24,6 +24,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run a single test for watcher applications")
     parser.add_argument("--config", default="test_config.py", help="Test configuration file")
     parser.add_argument("--test", required=True, help="Name of the test case to run")
+    parser.add_argument("--no-metadata", action="store_true", help="Skip metadata validation for this test")
     args = parser.parse_args()
     
     # Import test case from config file
@@ -34,6 +35,11 @@ if __name__ == "__main__":
     try:
         test_case = load_test_case_from_config(args.config, args.test)
         print(f"Running test: {test_case.name}")
+        
+        # Override expect_metadata if --no-metadata flag is used
+        if args.no_metadata:
+            test_case.expect_metadata = False
+            print("Metadata validation will be skipped for this test")
         
         # Kill any existing Hailo processes
         os.system("pkill -f Hailo")
