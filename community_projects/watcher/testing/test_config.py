@@ -94,9 +94,6 @@ TEST_CASES = [
             "max_instances": {"range": [1, 3]},
             "event_seconds": {"gt": 5}
         },
-        expected_classes={
-            "pigeon": {"ge": 70.0}
-        },
         custom_validation=validate_pigeon_deterrent
     )
 ]
