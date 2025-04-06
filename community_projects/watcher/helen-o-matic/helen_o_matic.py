@@ -183,12 +183,15 @@ class HelenOMatic(WatcherBase):
             "person": person_percent
         }
         
+        # Get threshold from config
+        threshold = config.get('HELEN_THRESHOLD_PERCENT', 10)
+        
         # If the direction is BACK and helen_back has the highest percentage
-        if named_direction == "BACK" and helen_back_percent > 30:
+        if named_direction == "BACK" and helen_back_percent > threshold:
             return "HELEN_BACK"
         
         # If the direction is OUT and helen_out has the highest percentage
-        if named_direction == "OUT" and helen_out_percent > 30:
+        if named_direction == "OUT" and helen_out_percent > threshold:
             return "HELEN_OUT"
             
         return None

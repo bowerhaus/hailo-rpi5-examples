@@ -49,6 +49,22 @@ TEST_CASES = [
         custom_validation=validate_helen_direction
     ),
     TestCase(
+        name="helen_out_low_percent_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "helen_out_low_percent.mp4")),
+        app_type="helen-o-matic",
+        expected_metadata={
+            "class": "dog",
+            "label": "HELEN_OUT",
+            "direction": {"range": [25, 100]},
+            "named_direction": "OUT"
+        },
+        expected_classes={
+            "helen_out": {"ge": 50.0},  
+            "dog": {"ge": 50.0}
+        },
+        custom_validation=validate_helen_direction
+    ),
+    TestCase(
         name="helen_back_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "helen_back.mp4")),
         app_type="helen-o-matic",
