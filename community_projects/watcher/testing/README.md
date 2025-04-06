@@ -13,6 +13,7 @@ The testing framework allows you to:
 5. Filter test cases based on specific criteria
 6. Handle cases where no metadata is expected to be generated
 7. Use the `expect_metadata` flag to specify whether metadata is expected for a test case
+8. Use default HEF and label files based on the app type
 
 ## Directory Structure
 
@@ -71,6 +72,8 @@ Test cases are defined in `test_config.py`. Each test case specifies:
 - `name`: A unique name for the test
 - `input_file`: Path to the input MP4 file
 - `app_type`: Either 'helen-o-matic' or 'pigeonator'
+- `hef_path`: (Optional) Path to the HEF file, uses default if not provided
+- `labels_json`: (Optional) Path to the labels JSON file, uses default if not provided
 - `expected_metadata`: Key-value pairs that should match in the output JSON
 - `expected_classes`: Minimum percentage values for specific classes
 - `timeout`: Maximum time in seconds to wait for the test to complete (default: 60)
@@ -89,12 +92,31 @@ TestCase(
         "label": "HELEN_OUT"
     },
     expected_classes={
-        "helen_out": 50.0,  # Expect at least 50% helen_out
-        "person": 80.0      # Expect at least 80% person
+        "helen_out": {"ge": 50.0},  # Expect at least 50% helen_out
+        "person": {"ge": 80.0}      # Expect at least 80% person
     },
     expect_metadata=True
 )
 ```
+
+## Default HEF and Label Files
+
+The framework uses default HEF and label files for each app type, which are defined in `test_config.py`:
+
+```python
+APP_DEFAULTS = {
+    "helen-o-matic": {
+        "hef_path": HELEN_HEF,
+        "labels_json": HELEN_LABELS
+    },
+    "pigeonator": {
+        "hef_path": PIGEON_HEF,
+        "labels_json": PIGEON_LABELS
+    }
+}
+```
+
+When creating test cases, you can omit the `hef_path` and `labels_json` parameters, and the default values will be used based on the `app_type`.
 
 ## Custom Validation
 

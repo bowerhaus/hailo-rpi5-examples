@@ -6,6 +6,24 @@ from test_runner import TestCase
 # Base directory for test data - renamed from testdata to test_data
 TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_data")
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HELEN_HEF = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8.hef")
+HELEN_LABELS = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v5-labels.json")
+PIGEON_HEF = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8.hef")
+PIGEON_LABELS = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v3-labels.json")
+
+# Define default configurations for each app type
+APP_DEFAULTS = {
+    "helen-o-matic": {
+        "hef_path": HELEN_HEF,
+        "labels_json": HELEN_LABELS
+    },
+    "pigeonator": {
+        "hef_path": PIGEON_HEF,
+        "labels_json": PIGEON_LABELS
+    }
+}
+
 # Custom validation functions
 def validate_helen_direction(metadata):
     """Validate that a helen_out detection has a direction between 25-100 degrees."""
@@ -52,6 +70,10 @@ TEST_CASES = [
         name="helen_out_low_percent_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "helen_out_low_percent.mp4")),
         app_type="helen-o-matic",
+
+        # Explicitly specify a custom HEF path for this test (kept as an example)
+        hef_path=os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8.hef"),
+
         expected_metadata={
             "class": "dog",
             "label": "HELEN_OUT",

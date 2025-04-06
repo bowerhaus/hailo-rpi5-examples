@@ -14,6 +14,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", required=True, help="Output directory for metadata and recordings")
     parser.add_argument("--app", choices=["helen-o-matic", "pigeonator"], required=True, help="Application to run")
     parser.add_argument("--input", default="rpi", help="Input source (default: rpi)")
+    parser.add_argument("--hef-path", help="Path to HEF file (optional, uses default if not provided)")
+    parser.add_argument("--labels-json", help="Path to labels JSON file (optional, uses default if not provided)")
     args = parser.parse_args()
     
     # Convert output directory to absolute path
@@ -31,29 +33,65 @@ if __name__ == "__main__":
     env["WATCHER_OUTPUT_DIRECTORY"] = output_dir
     print(f"Setting WATCHER_OUTPUT_DIRECTORY to: {output_dir}")
     
+    # Import the defaults
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        from test_config import APP_DEFAULTS
+    except ImportError:
+        print("Warning: Could not import APP_DEFAULTS from test_config, using hardcoded defaults")
+        APP_DEFAULTS = {
+            "helen-o-matic": {
+                "hef_path": "models/helen-o-matic.v7.yolov8.hef",
+                "labels_json": "models/helen-o-matic.v5-labels.json"
+            },
+            "pigeonator": {
+                "hef_path": "models/pigeonator-mk3-b.v4.yolov8.hef",
+                "labels_json": "models/pigeonator-mk3-b.v3-labels.json"
+            }
+        }
+    
     # Determine which app to run
+    app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), args.app)
+    
+    # Use provided HEF and labels, fall back to defaults
+    hef_path = args.hef_path
+    labels_json = args.labels_json
+    
+    if not hef_path and args.app in APP_DEFAULTS:
+        hef_path = APP_DEFAULTS[args.app]["hef_path"]
+        # Convert to relative path if it's in the app directory
+        if os.path.dirname(os.path.abspath(hef_path)).startswith(app_dir):
+            hef_path = os.path.relpath(hef_path, app_dir)
+    
+    if not labels_json and args.app in APP_DEFAULTS:
+        labels_json = APP_DEFAULTS[args.app]["labels_json"]
+        # Convert to relative path if it's in the app directory
+        if os.path.dirname(os.path.abspath(labels_json)).startswith(app_dir):
+            labels_json = os.path.relpath(labels_json, app_dir)
+    
+    # Build the command
     if args.app == "helen-o-matic":
-        app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "helen-o-matic")
         cmd = [
             "python", "helen_o_matic.py",
             "--use-frame",
-            "--hef-path", "models/helen-o-matic.v6.yolov8p.hef",
-            "--labels-json", "models/helen-o-matic.v5-labels.json",
+            "--hef-path", hef_path,
+            "--labels-json", labels_json,
             "--input", input_path
         ]
     else:  # pigeonator
-        app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pigeonator")
         cmd = [
             "python", "pigeonator.py",
             "--use-frame",
-            "--hef-path", "models/pigeonator-mk3-b.v4.yolov8.hef",
-            "--labels-json", "models/pigeonator-mk3-b.v3-labels.json",
+            "--hef-path", hef_path,
+            "--labels-json", labels_json,
             "--input", input_path
         ]
     
     # Run the command with the modified environment
     try:
         print(f"Running {args.app} with output directory: {output_dir}")
+        print(f"Using HEF: {hef_path}")
+        print(f"Using labels: {labels_json}")
         os.chdir(app_dir)
         subprocess.run(cmd, env=env, check=True)
     except subprocess.CalledProcessError as e:

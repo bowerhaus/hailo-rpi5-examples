@@ -30,6 +30,8 @@ class TestCase:
     name: str
     input_file: str
     app_type: str  # 'helen-o-matic' or 'pigeonator'
+    hef_path: Optional[str] = None
+    labels_json: Optional[str] = None
     expected_metadata: Dict[str, Any] = field(default_factory=dict)
     expected_classes: Dict[str, Any] = field(default_factory=dict)
     timeout: int = DEFAULT_TIMEOUT
@@ -37,9 +39,28 @@ class TestCase:
     expect_metadata: bool = True  # Flag to indicate if metadata should be generated
     
     def __post_init__(self):
+        # Import the defaults here to avoid circular imports
+        # Get the APP_DEFAULTS from test_config
+        try:
+            from test_config import APP_DEFAULTS
+            
+            # Use defaults if not provided
+            if self.app_type in APP_DEFAULTS:
+                if self.hef_path is None:
+                    self.hef_path = APP_DEFAULTS[self.app_type]["hef_path"]
+                if self.labels_json is None:
+                    self.labels_json = APP_DEFAULTS[self.app_type]["labels_json"]
+        except (ImportError, AttributeError):
+            # If APP_DEFAULTS is not defined, continue with provided values
+            pass
+            
         # Ensure input file exists
         if not os.path.exists(self.input_file):
             raise ValueError(f"Input file {self.input_file} does not exist")
+        if self.hef_path and not os.path.exists(self.hef_path):
+            raise ValueError(f"HEF file {self.hef_path} does not exist")
+        if self.labels_json and not os.path.exists(self.labels_json):
+            raise ValueError(f"Labels JSON file {self.labels_json} does not exist")
 
 
 class TestRunner:
@@ -158,8 +179,8 @@ class TestRunner:
                 "python",
                 os.path.basename(app_script),
                 "--input", os.path.abspath(test_case.input_file),  # Ensure this is absolute
-                "--hef-path", "models/" + os.path.basename(self._get_hef_path(test_case.app_type)),
-                "--labels-json", "models/" + os.path.basename(self._get_labels_json(test_case.app_type)),
+                "--hef-path", os.path.abspath(test_case.hef_path),
+                "--labels-json", os.path.abspath(test_case.labels_json),
                 "--use-frame"
             ]
             
@@ -356,44 +377,6 @@ class TestRunner:
                 os.path.dirname(os.path.dirname(__file__)),
                 "pigeonator",
                 "pigeonator.py"
-            )
-        else:
-            raise ValueError(f"Unknown app type: {app_type}")
-    
-    def _get_hef_path(self, app_type):
-        """Get the path to the HEF file for the application."""
-        if app_type == "helen-o-matic":
-            return os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "helen-o-matic",
-                "models",
-                "helen-o-matic.v7.yolov8.hef"
-            )
-        elif app_type == "pigeonator":
-            return os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "pigeonator",
-                "models",
-                "pigeonator-mk3-b.v4.yolov8.hef"
-            )
-        else:
-            raise ValueError(f"Unknown app type: {app_type}")
-    
-    def _get_labels_json(self, app_type):
-        """Get the path to the labels JSON file for the application."""
-        if app_type == "helen-o-matic":
-            return os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "helen-o-matic",
-                "models",
-                "helen-o-matic.v5-labels.json"
-            )
-        elif app_type == "pigeonator":
-            return os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "pigeonator",
-                "models",
-                "pigeonator-mk3-b.v3-labels.json"
             )
         else:
             raise ValueError(f"Unknown app type: {app_type}")
