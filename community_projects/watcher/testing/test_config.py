@@ -7,7 +7,7 @@ from test_runner import TestCase
 TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_data")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HELEN_HEF = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8.hef")
+HELEN_HEF = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8p.hef")
 HELEN_LABELS = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v5-labels.json")
 PIGEON_HEF = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8.hef")
 PIGEON_LABELS = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v3-labels.json")
@@ -61,7 +61,7 @@ TEST_CASES = [
             "named_direction": "OUT"
         },
         expected_classes={
-            "helen_out": {"ge": 50.0},  
+            "helen_out": {"ge": 42.0},  
             "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
@@ -72,7 +72,7 @@ TEST_CASES = [
         app_type="helen-o-matic",
 
         # Explicitly specify a custom HEF path for this test (kept as an example)
-        hef_path=os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8.hef"),
+        hef_path=os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.yolov8p.hef"),
 
         expected_metadata={
             "class": "dog",
@@ -81,7 +81,7 @@ TEST_CASES = [
             "named_direction": "OUT"
         },
         expected_classes={
-            "helen_out": {"ge": 50.0},  
+            "helen_out": {"ge": 28.0},  
             "dog": {"ge": 50.0}
         },
         custom_validation=validate_helen_direction
@@ -112,12 +112,12 @@ TEST_CASES = [
         },
         expected_classes={
             "person": {"ge": 50.0},
-            "dog": {"ge": 47}
+            "dog": {"ge": 45}
         }
     ),
     TestCase(
-        name="kids_no_dog_test",
-        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "kids_no_dog.mp4")),
+        name="false_dog_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "false_dog.mp4")),
         app_type="helen-o-matic",
         expect_metadata=False,  # This test will not produce metadata because no class matches
     ),

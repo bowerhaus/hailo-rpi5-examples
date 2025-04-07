@@ -11,8 +11,8 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/helen-o-matic",
             "program": "${workspaceFolder}/community_projects/watcher/helen-o-matic/helen_o_matic.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
-            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "test_data/helen_back.mp4"]
+            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
+            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "test_data/helen_back.mp4"]
         },
         {
             "name": "Python: Run Pigeonator",
@@ -48,7 +48,7 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/testing",
             "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
             "console": "integratedTerminal",
-            "args": ["--app-type", "helen-o-matic", "--test-name", "helen_out_low_percent_test"]
+            "args": ["--app-type", "helen-o-matic", "--test-name", "false_dog_test"]
         },
         {
             "name": "Python: Run Pigeonator Tests Only",

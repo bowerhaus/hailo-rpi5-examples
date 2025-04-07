@@ -49,9 +49,10 @@ class PigeonatorWatcher(WatcherBase):
             if tracking_duration >= self.deter_delay_seconds:
                 self.deterrent_manager.trigger_deterrent()
 
-    def stop_active_tracking(self):
+    def stop_active_tracking(self, abort=False):
         """Override to add pigeon-specific behavior"""
-        super().stop_active_tracking()
+        # Call parent method with abort parameter
+        super().stop_active_tracking(abort)
         # Reset the deterrent trigger
         self.deterrent_manager.reset_deterrent_trigger()
 

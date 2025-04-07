@@ -271,8 +271,12 @@ class WatcherBase(app_callback_class):
         avg_detection_count_rounded = round(self.get_average_detection_instance_count())
         return f"{self.active_timestamp}_{self.class_to_track}_x{avg_detection_count_rounded}"
 
-    def stop_active_tracking(self):
-        """Stop tracking objects and save relevant data."""
+    def stop_active_tracking(self, abort=False):
+        """Stop tracking objects and save relevant data.
+        
+        Args:
+            abort (bool): If True, don't save metadata and delete any created files.
+        """
         self.is_active_tracking = False
         self.end_centroid = self.object_centroid
         
@@ -287,38 +291,57 @@ class WatcherBase(app_callback_class):
         output_dir = f"{self.output_directory}/{date_subdir}"
         os.makedirs(output_dir, exist_ok=True)
 
-        # Stop any video recording and rename the file to include the average count
+        # Stop any video recording
         final_video_filename = f"{output_dir}/{root_filename}.m4v"  # Use .m4v extension
         self.stop_video_recording(final_video_filename)
 
-        # Convert video to H264 in background thread - will rename to .mp4
-        threading.Thread(
-            target=self.convert_video_to_h264,
-            args=(final_video_filename,),
-            daemon=True
-        ).start()
+        # If aborting, delete the video file and skip the rest of the process
+        if abort:
+            self.logger.info(f"Aborting tracking, deleting any created files.")
+            # Delete video file if it exists
+            if os.path.exists(final_video_filename):
+                os.remove(final_video_filename)
+                self.logger.info(f"Deleted video file: {final_video_filename}")
+                
+            # Check for and delete the MP4 version if it exists
+            mp4_filename = final_video_filename.replace('.m4v', '.mp4')
+            if os.path.exists(mp4_filename):
+                os.remove(mp4_filename)
+                self.logger.info(f"Deleted converted video file: {mp4_filename}")
+                
+            # Delete image file if it exists
+            if hasattr(self, 'image_filename') and self.image_filename and os.path.exists(self.image_filename):
+                os.remove(self.image_filename)
+                self.logger.info(f"Deleted image file: {self.image_filename}")
+        else:
+            # Convert video to H264 in background thread - will rename to .mp4
+            threading.Thread(
+                target=self.convert_video_to_h264,
+                args=(final_video_filename,),
+                daemon=True
+            ).start()
 
-        # Save the frame with the most instances if SAVE_DETECTION_IMAGES is True
-        if self.save_frame is not None and self.save_detection_images:
-            self.image_filename = f"{output_dir}/{root_filename}.jpg"
-            cv2.imwrite(self.image_filename, self.save_frame)
-            self.logger.info(f"Image saved as {self.image_filename}")
+            # Save the frame with the most instances if SAVE_DETECTION_IMAGES is True
+            if self.save_frame is not None and self.save_detection_images:
+                self.image_filename = f"{output_dir}/{root_filename}.jpg"
+                cv2.imwrite(self.image_filename, self.save_frame)
+                self.logger.info(f"Image saved as {self.image_filename}")
 
-        # Compute event duration in seconds from active_timestamp
-        try:
-            event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
-        except Exception:
-            event_start = datetime.datetime.now()
-        event_seconds = (datetime.datetime.now() - event_start).total_seconds()
+            # Compute event duration in seconds from active_timestamp
+            try:
+                event_start = datetime.datetime.strptime(self.active_timestamp + "000", "%Y%m%d_%H%M%S_%f")
+            except Exception:
+                event_start = datetime.datetime.now()
+            event_seconds = (datetime.datetime.now() - event_start).total_seconds()
 
-        # Create metadata dictionary
-        metadata = self.create_metadata(root_filename, event_seconds)
+            # Create metadata dictionary
+            metadata = self.create_metadata(root_filename, event_seconds)
 
-        # Save metadata as JSON file
-        metadata_filename = f"{output_dir}/{root_filename}.json"
-        with open(metadata_filename, 'w') as metadata_file:
-            json.dump(metadata, metadata_file)
-        self.logger.info(f"Metadata saved: {metadata}")
+            # Save metadata as JSON file
+            metadata_filename = f"{output_dir}/{root_filename}.json"
+            with open(metadata_filename, 'w') as metadata_file:
+                json.dump(metadata, metadata_file)
+            self.logger.info(f"Metadata saved: {metadata}")
 
         # Reset tracking state
         self.max_instances = 0

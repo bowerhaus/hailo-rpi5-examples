@@ -103,6 +103,13 @@ class HelenOMatic(WatcherBase):
         person_percent = round((self.person_count / total_frames) * 100, 1)
         dog_percent = round((self.dog_count / total_frames) * 100, 1)  # Calculate dog percentage
 
+        # Calculate visible dog seconds
+        dog_seconds = 0
+        if self.tracking_start_time:
+            total_event_seconds = (datetime.datetime.now() - self.tracking_start_time).total_seconds()
+            dog_seconds = (total_event_seconds - self.class_gone_seconds) * (dog_percent / 100.0)
+            dog_seconds = round(max(0, dog_seconds), 1)  # Ensure non-negative and round to 1 decimal
+
         new_metadata = {
             "direction": avg_velocity_direction,
             "named_direction": named_direction,
@@ -110,25 +117,45 @@ class HelenOMatic(WatcherBase):
             "helen_out_percent": helen_out_percent,
             "helen_back_percent": helen_back_percent,
             "person_percent": person_percent,
-            "dog_percent": dog_percent  # Add dog percentage to metadata
+            "dog_percent": dog_percent,  # Add dog percentage to metadata
+            "dog_seconds": dog_seconds    # Add visible dog seconds to metadata
         }
         metadata.update(new_metadata)
         return metadata
     
-    def stop_active_tracking(self):
+    def stop_active_tracking(self, abort=False):
         """Override to add reporting for additional classes"""
         # Calculate percentages before calling super's stop_active_tracking
         total_frames = max(self.total_active_frames, 1)  # Avoid division by zero
         helen_out_percent = round((self.helen_out_count / total_frames) * 100, 1)
-        helen_back_percent = round((self.helen_back_count / total_frames) * 100, 1)
+        helen_back_percent = round((self.helen_back_count / total_frames) * 100, 1) if hasattr(self, 'helen_back_percent') else 0
         person_percent = round((self.person_count / total_frames) * 100, 1)
         dog_percent = round((self.dog_count / total_frames) * 100, 1)  # Calculate dog percentage
         
         # Log the percentages
         logger.info(f"{self.class_to_track.upper()} GONE with additional class percentages: Helen Out: {helen_out_percent}%, Helen Back: {helen_back_percent}%, Person: {person_percent}%, Dog: {dog_percent}%")
         
-        # Call the parent class method to handle the rest of the tracking stop
-        super().stop_active_tracking()
+        # Calculate actual visible dog time
+        if self.tracking_start_time:
+            event_seconds = (datetime.datetime.now() - self.tracking_start_time).total_seconds()
+            
+            # Updated formula: (event_seconds - CLASS_GONE_SECONDS) * dog_percent / 100
+            # This accounts for the fact that we wait CLASS_GONE_SECONDS before declaring the dog is gone
+            visible_dog_seconds = (event_seconds - self.class_gone_seconds) * (dog_percent / 100.0)
+            
+            # Get minimum required dog seconds from config (default 1 second)
+            dog_min_seconds = self.config.get('DOG_MIN_SECONDS', 1)
+            
+            # Log the calculated values
+            logger.info(f"Total event: {event_seconds:.1f}s, Dog visible: {visible_dog_seconds:.1f}s, Minimum required: {dog_min_seconds}s")
+            
+            # If visible dog time is less than minimum, abort
+            if visible_dog_seconds < dog_min_seconds:
+                logger.info(f"Dog visibility time {visible_dog_seconds:.1f}s below threshold {dog_min_seconds}s - aborting event")
+                abort = True
+        
+        # Call the parent class method with the abort parameter
+        super().stop_active_tracking(abort)
         
         # Reset our counters after parent has finished
         self.helen_out_count = 0
