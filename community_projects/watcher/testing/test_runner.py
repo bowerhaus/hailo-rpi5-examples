@@ -32,6 +32,7 @@ class TestCase:
     app_type: str  # 'helen-o-matic' or 'pigeonator'
     hef_path: Optional[str] = None
     labels_json: Optional[str] = None
+    config_file: Optional[str] = None
     expected_metadata: Dict[str, Any] = field(default_factory=dict)
     expected_classes: Dict[str, Any] = field(default_factory=dict)
     timeout: int = DEFAULT_TIMEOUT
@@ -46,10 +47,17 @@ class TestCase:
             
             # Use defaults if not provided
             if self.app_type in APP_DEFAULTS:
-                if self.hef_path is None:
-                    self.hef_path = APP_DEFAULTS[self.app_type]["hef_path"]
-                if self.labels_json is None:
-                    self.labels_json = APP_DEFAULTS[self.app_type]["labels_json"]
+                app_defaults = APP_DEFAULTS[self.app_type]
+                
+                # Only apply defaults if the values weren't explicitly provided
+                if self.hef_path is None and "hef_path" in app_defaults:
+                    self.hef_path = app_defaults["hef_path"]
+                    
+                if self.labels_json is None and "labels_json" in app_defaults:
+                    self.labels_json = app_defaults["labels_json"]
+                    
+                if self.config_file is None and "config_file" in app_defaults:
+                    self.config_file = app_defaults["config_file"]
         except (ImportError, AttributeError):
             # If APP_DEFAULTS is not defined, continue with provided values
             pass
@@ -61,6 +69,8 @@ class TestCase:
             raise ValueError(f"HEF file {self.hef_path} does not exist")
         if self.labels_json and not os.path.exists(self.labels_json):
             raise ValueError(f"Labels JSON file {self.labels_json} does not exist")
+        if self.config_file and not os.path.exists(self.config_file):
+            raise ValueError(f"Config file {self.config_file} does not exist")
 
 
 class TestRunner:
@@ -111,6 +121,37 @@ class TestRunner:
             logger.warning("No tests match the specified filters!")
             
         return filtered_tests
+    
+    def display_tests_and_get_selection(self):
+        """
+        Display available tests and prompt the user to select one.
+        
+        Returns:
+            TestCase: The selected test case or None if selection is invalid
+        """
+        if not self.test_cases:
+            logger.error("No tests available to select")
+            return None
+            
+        print("\n=== Available Tests ===")
+        for i, test in enumerate(self.test_cases):
+            print(f"{i+1}. {test.name} (type: {test.app_type})")
+        print("======================\n")
+        
+        try:
+            selection = input("Enter test number to run (or 'q' to quit): ")
+            if selection.lower() == 'q':
+                return None
+                
+            index = int(selection) - 1
+            if 0 <= index < len(self.test_cases):
+                return [self.test_cases[index]]
+            else:
+                logger.error(f"Invalid selection: {selection}. Please enter a number between 1 and {len(self.test_cases)}")
+                return None
+        except ValueError:
+            logger.error("Please enter a valid number")
+            return None
     
     def run_tests(self):
         """Run all test cases and collect results."""
@@ -187,9 +228,15 @@ class TestRunner:
             # Run the app as a subprocess
             logger.info(f"Executing command in {app_dir}: {' '.join(cmd)}")
             env = os.environ.copy()
+            
             # Set the output directory via environment variable - use absolute path
             env["WATCHER_OUTPUT_DIRECTORY"] = os.path.abspath(os.path.join(test_output_dir, "output"))
             logger.info(f"Setting output directory to: {env['WATCHER_OUTPUT_DIRECTORY']}")
+            
+            # Set config file path if test case has a specific config file
+            if hasattr(test_case, 'config_file') and test_case.config_file:
+                env["WATCHER_CONFIG_FILE"] = os.path.abspath(test_case.config_file)
+                logger.info(f"Setting config file to: {env['WATCHER_CONFIG_FILE']}")
             
             # Change to the application directory before running
             os.chdir(app_dir)
@@ -232,7 +279,7 @@ class TestRunner:
                         process.kill()  # Force kill if it doesn't terminate
                     os.chdir(original_cwd)  # Restore original directory
                     raise TimeoutError(f"Test {test_case.name} timed out after {test_case.timeout} seconds")
-                time.sleep(1)  # Check status every second instead of 20 seconds
+                time.sleep(1)  # Check status every second
             
             # Get process output
             returncode = process.returncode
@@ -408,6 +455,8 @@ if __name__ == "__main__":
                         help="Filter tests by application type")
     parser.add_argument("--test-name", help="Run a specific test by name")
     parser.add_argument("--list", action="store_true", help="List available tests without running them")
+    parser.add_argument("--interactive", "-i", action="store_true", 
+                        help="Interactive mode: list tests and select one to run")
     args = parser.parse_args()
     
     # Import test cases from config file
@@ -436,6 +485,15 @@ if __name__ == "__main__":
     
     # Replace the test cases with the filtered list
     runner.test_cases = filtered_tests
+    
+    # Interactive mode: Let user select from available tests
+    if args.interactive:
+        # Display filtered tests and get user selection
+        selected_test = runner.display_tests_and_get_selection()
+        if not selected_test:
+            logger.info("No test selected, exiting")
+            sys.exit(0)
+        runner.test_cases = selected_test
     
     # Run tests
     success = runner.run_tests()

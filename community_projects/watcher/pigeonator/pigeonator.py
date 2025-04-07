@@ -18,8 +18,10 @@ from time import sleep
 from deterrent_manager import DeterrentManager
 from watcher_base import WatcherBase, watcher_base_callback
 
-# Load configuration from config.json
-with open('config.json', 'r') as config_file:
+# Load configuration from config.json or from environment variable if specified
+config_file = os.environ.get('WATCHER_CONFIG_FILE', 'config.json')
+logger.info(f"Loading configuration from: {config_file}")
+with open(config_file, 'r') as config_file:
     config = json.load(config_file)
     logger.info(f"Loaded config: {config}")
 
