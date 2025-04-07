@@ -21,7 +21,6 @@ class Clock:
     def build_data(self):
         records = []
         last_date = None
-        first_record_of_day = True
         temp_storage = []
 
         # Iterate through date subdirectories
@@ -50,10 +49,11 @@ class Clock:
             logging.error(f"Error sorting by timestamp: {e}")
             return records
 
-        # Process each file from the sorted temp_storage
+        # Group records by date
+        date_records = {}
         for file_path, data in temp_storage:
             try:
-                # Check if reviewed is true and label is HELEN_OUT or HELEN_BACK (case insensitive)
+                # Skip records that aren't reviewed or don't have a label
                 if not data.get("reviewed", False):
                     continue
                     
@@ -64,27 +64,54 @@ class Clock:
                 label = label.upper()
                 if label not in ("HELEN_OUT", "HELEN_BACK"):
                     continue
-                    
-                current_date = data['timestamp'][:8]  # Extract date from timestamp
-                if current_date != last_date:
-                    # New day
-                    last_date = current_date
-                    first_record_of_day = True
-
-                if first_record_of_day:
-                    if label != "HELEN_OUT":
-                        logging.warning(f"First record of day {current_date} is not HELEN_OUT. Ignoring: {file_path}")
-                        continue  # Ignore this record
-                    first_record_of_day = False
-
-                # Check for identical adjacent labels
-                if records and records[-1].get('label', '') == data.get('label', ''):
-                    logging.warning(f"Identical adjacent label found. Ignoring: {file_path}")
-                    continue  # Ignore this record
-
-                records.append(data)
+                
+                # Extract date from timestamp
+                current_date = data['timestamp'][:8]
+                
+                # Initialize date entry if not present
+                if current_date not in date_records:
+                    date_records[current_date] = []
+                
+                # Add record to its date group
+                date_records[current_date].append(data)
             except Exception as e:
                 logging.warning(f"Error processing record {file_path}: {e}")
+        
+        # Process each date's records
+        for date, day_records in date_records.items():
+            # Skip days with no records
+            if not day_records:
+                continue
+                
+            # Check if the first record of the day is HELEN_OUT
+            if day_records[0].get('label', '').upper() != "HELEN_OUT":
+                logging.warning(f"First record of day {date} is not HELEN_OUT. Skipping day.")
+                continue
+                
+            # Check if the last record of the day is HELEN_BACK
+            if day_records[-1].get('label', '').upper() != "HELEN_BACK":
+                logging.warning(f"Last record of day {date} is not HELEN_BACK. Removing last HELEN_OUT.")
+                # Find and remove the last HELEN_OUT
+                for i in range(len(day_records) - 1, -1, -1):
+                    if day_records[i].get('label', '').upper() == "HELEN_OUT":
+                        day_records.pop(i)
+                        break
+            
+            # Process pairs of HELEN_OUT followed by HELEN_BACK
+            i = 0
+            while i < len(day_records) - 1:
+                curr_label = day_records[i].get('label', '').upper()
+                next_label = day_records[i+1].get('label', '').upper()
+                
+                if curr_label == "HELEN_OUT" and next_label == "HELEN_BACK":
+                    # Valid pair - add both to records
+                    records.append(day_records[i])
+                    records.append(day_records[i+1])
+                    i += 2
+                else:
+                    # Invalid sequence - skip the current record
+                    logging.warning(f"Invalid sequence on {date}: {curr_label} followed by {next_label}. Skipping.")
+                    i += 1
         
         return records
 
@@ -121,24 +148,48 @@ class Clock:
         if len(records) < 2:
             return clock_records
 
-        # Process adjacent pairs of records (unchanged conversion to 5-minute buckets)
+        # Get max walk duration from config (default: 150 minutes)
+        max_walk_minutes = config.get('HELEN_WALK_MAX_MINUTES', 150)
+        
+        # Process adjacent pairs of records
         for i in range(0, len(records) - 1, 2):
             start_ts = records[i]['timestamp']
             end_ts = records[i + 1]['timestamp']
 
+            # Calculate walk duration in minutes
             start_hour = int(start_ts[9:11])
             start_minute = int(start_ts[11:13])
-            start_bucket = (start_hour * 12) + (start_minute // 5)
-
+            start_total_minutes = start_hour * 60 + start_minute
+            
             end_hour = int(end_ts[9:11])
             end_minute = int(end_ts[11:13])
+            end_total_minutes = end_hour * 60 + end_minute
+            
+            # Handle cases where walk spans midnight
+            if end_total_minutes < start_total_minutes:
+                end_total_minutes += 24 * 60  # Add 24 hours
+            
+            walk_duration = end_total_minutes - start_total_minutes
+            
+            # Truncate the end time if walk is longer than maximum allowed
+            if walk_duration > max_walk_minutes:
+                # Calculate truncated end time
+                truncated_end_minutes = start_total_minutes + max_walk_minutes
+                # Convert back to hours and minutes, handling wrap around midnight
+                truncated_end_minutes = truncated_end_minutes % (24 * 60)
+                end_hour = truncated_end_minutes // 60
+                end_minute = truncated_end_minutes % 60
+                print(f"Truncating walk {start_ts} from {walk_duration} to {max_walk_minutes} minutes")
+            
+            # Convert to bucket indices (12 buckets per hour, 5 minutes each)
+            start_bucket = (start_hour * 12) + (start_minute // 5)
             end_bucket = (end_hour * 12) + (end_minute // 5)
 
             for bucket in range(start_bucket, end_bucket + 1):
                 if 0 <= bucket < 288:
                     clock_records[bucket]['count'] += 1
 
-        # Print only records with non-zero counts (unchanged)
+        # Print only records with non-zero counts
         for record in clock_records:
             if record['count'] > 0:
                 print(f"Time {record['time'].strftime('%H:%M')}: {record['count']}")
