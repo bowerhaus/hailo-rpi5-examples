@@ -14,6 +14,7 @@ The testing framework allows you to:
 6. Handle cases where no metadata is expected to be generated
 7. Use the `expect_metadata` flag to specify whether metadata is expected for a test case
 8. Use default HEF and label files based on the app type
+9. Interactively select tests to run from a filtered list
 
 ## Directory Structure
 
@@ -63,6 +64,26 @@ To run a single test by name:
 
 ```
 python -m testing.test_runner --test-name "helen_out_test"
+```
+
+To list available tests without running them:
+
+```
+python -m testing.test_runner --list
+```
+
+To interactively select which test to run:
+
+```
+python -m testing.test_runner --interactive
+# or the shorter version
+python -m testing.test_runner -i
+```
+
+You can also combine the interactive mode with filters:
+
+```
+python -m testing.test_runner --app-type helen-o-matic --interactive
 ```
 
 ## Defining Test Cases
