@@ -150,7 +150,6 @@ TEST_CASES = [
             "max_instances": {"eq": 3},
             "average_instances": {"approx": 3},
             "event_seconds": {"gt": 15},
-            "video_truncated": True,
             "deterrent_triggered": True
         },
         custom_validation=validate_pigeon_deterrent

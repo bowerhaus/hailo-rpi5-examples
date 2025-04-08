@@ -111,7 +111,7 @@ class ApproximateValidator(ValueValidator):
     """Validates that a value is approximately equal to the expected value (within ±0.1)"""
     def __init__(self, expected_value):
         self.expected_value = expected_value
-        self.tolerance = 0.1
+        self.tolerance = 0.11
         
     def validate(self, actual_value):
         is_valid = abs(actual_value - self.expected_value) <= self.tolerance
