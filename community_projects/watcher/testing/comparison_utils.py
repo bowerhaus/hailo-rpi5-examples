@@ -32,7 +32,7 @@ class ValueValidator:
         """
         if spec is None:
             return NoneValidator()
-        elif isinstance(spec, dict) and any(k in spec for k in ['eq', 'gt', 'lt', 'ge', 'le', 'range']):
+        elif isinstance(spec, dict) and any(k in spec for k in ['eq', 'gt', 'lt', 'ge', 'le', 'range', 'approx']):
             if 'range' in spec:
                 return RangeValidator(spec['range'][0], spec['range'][1])
             elif 'eq' in spec:
@@ -45,6 +45,8 @@ class ValueValidator:
                 return GreaterThanOrEqualValidator(spec['ge'])
             elif 'le' in spec:
                 return LessThanOrEqualValidator(spec['le'])
+            elif 'approx' in spec:
+                return ApproximateValidator(spec['approx'])
         else:
             # Default to equality for direct values
             return EqualityValidator(spec)
@@ -102,6 +104,18 @@ class LessThanOrEqualValidator(ValueValidator):
     def validate(self, actual_value):
         is_valid = actual_value <= self.max_value
         error_msg = None if is_valid else f"expected <= {self.max_value}, got {actual_value}"
+        return is_valid, error_msg
+
+
+class ApproximateValidator(ValueValidator):
+    """Validates that a value is approximately equal to the expected value (within ±0.1)"""
+    def __init__(self, expected_value):
+        self.expected_value = expected_value
+        self.tolerance = 0.1
+        
+    def validate(self, actual_value):
+        is_valid = abs(actual_value - self.expected_value) <= self.tolerance
+        error_msg = None if is_valid else f"expected approximately {self.expected_value} (±{self.tolerance}), got {actual_value}"
         return is_valid, error_msg
 
 

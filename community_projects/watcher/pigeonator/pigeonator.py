@@ -40,6 +40,10 @@ class PigeonatorWatcher(WatcherBase):
         # Initialize DeterrentManager
         self.deterrent_manager = DeterrentManager(config)
         self.deter_delay_seconds = config.get('DETER_DELAY_SECONDS', 8)
+        
+        # Track whether the deterrent was triggered during this detection event
+        self.deterrent_would_trigger = False
+        self.deterrent_triggered = False
 
     def active_tracking(self, class_detections):
         """Override to add deterrent trigger logic"""
@@ -48,8 +52,21 @@ class PigeonatorWatcher(WatcherBase):
         # Check if the pigeon has been tracked for DETER_DELAY_SECONDS, and if so, trigger deterrent
         if self.tracking_start_time:
             tracking_duration = (datetime.datetime.now() - self.tracking_start_time).total_seconds()
-            if tracking_duration >= self.deter_delay_seconds:
+            
+            # Check if the pigeon is still present in the current detections
+            if tracking_duration >= self.deter_delay_seconds and len(class_detections)>0:
+                self.deterrent_triggered = True
                 self.deterrent_manager.trigger_deterrent()
+
+    def create_metadata(self, root_filename, event_seconds):
+        """Override to add deterrent_triggered field to metadata"""
+        # Get the base metadata from parent class
+        metadata = super().create_metadata(root_filename, event_seconds)
+        
+        # Add deterrent_triggered field
+        metadata["deterrent_triggered"] = self.deterrent_triggered
+        
+        return metadata
 
     def stop_active_tracking(self, abort=False):
         """Override to add pigeon-specific behavior"""
@@ -57,6 +74,8 @@ class PigeonatorWatcher(WatcherBase):
         super().stop_active_tracking(abort)
         # Reset the deterrent trigger
         self.deterrent_manager.reset_deterrent_trigger()
+        # Reset the triggered flag for the next detection
+        self.deterrent_triggered = False
 
 
 if __name__ == "__main__":

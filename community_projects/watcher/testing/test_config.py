@@ -128,14 +128,78 @@ TEST_CASES = [
     
     # Pigeonator test cases
     TestCase(
-        name="pigeon_test",
+        name="two_pigeons_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "two_pigeons.mp4")),
         app_type="pigeonator",
         expected_metadata={
             "class": "pigeon",
-            "max_instances": {"range": [1, 3]},
-            "event_seconds": {"gt": 5}
+            "max_instances": {"eq": 2},
+            "average_instances": {"approx": 2},
+            "event_seconds": {"gt": 24},
+            "video_truncated": True,
+            "deterrent_triggered": True
         },
         custom_validation=validate_pigeon_deterrent
+    ),
+        TestCase(
+        name="three_pigeons_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "three_pigeons.mp4")),
+        app_type="pigeonator",
+        expected_metadata={
+            "class": "pigeon",
+            "max_instances": {"eq": 3},
+            "average_instances": {"approx": 3},
+            "event_seconds": {"gt": 15},
+            "video_truncated": True,
+            "deterrent_triggered": True
+        },
+        custom_validation=validate_pigeon_deterrent
+    ),
+    TestCase(
+        name="poor_lighting1_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "poor_lighting1.mp4")),
+        hef_path=os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8p.hef"),
+        app_type="pigeonator",
+        expected_metadata={
+            "class": "pigeon",
+            "max_instances": {"eq": 2},
+            "average_instances": {"approx": 2},
+            "event_seconds": {"gt": 30},
+            "video_truncated": True,
+            "deterrent_triggered": True
+        },
+    ),
+    TestCase(
+        name="clippy1_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "clippy1.mp4")),
+        app_type="pigeonator",
+        expect_metadata=False
+    ),
+        TestCase(
+        name="sally1_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally1.mp4")),
+        hef_path=os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8.hef"),
+        app_type="pigeonator",
+        expected_metadata={
+            "class": "pigeon",
+            "max_instances": {"eq": 1},
+            "initial_confidence": {"approx": 0.55},
+            "average_instances": {"approx": 1},
+            "event_seconds": {"approx": 2.1},
+            "video_truncated": False,
+            "deterrent_triggered": False
+        },
+    ),
+        TestCase(
+        name="sally2_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally2.mp4")),
+        app_type="pigeonator",
+        expect_metadata=False
+    ),
+        TestCase(
+        name="sally3_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally3.mp4")),
+        app_type="pigeonator",
+        expect_metadata=False
     )
 ]

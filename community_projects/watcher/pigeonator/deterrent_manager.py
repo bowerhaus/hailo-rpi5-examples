@@ -34,8 +34,10 @@ class DeterrentManager:
                 eco=False
             )
             logger.info("Watering triggered via LinkTap API")
+            return True
         except Exception as e:
-            logger.error(f"Error calling LinkTap API: {e}")
+            logger.error(f"Error calling LinkTap API: {e}, {self.linktap_gatewayid}, {self.linktap_taplinkerid}, {self.watering_duration_sec}")
+            return False
 
     def trigger_deterrent(self):
         if self.watering_on:
