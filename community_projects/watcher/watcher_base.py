@@ -203,6 +203,9 @@ class WatcherBase(app_callback_class):
         output_dir = f"{self.output_directory}/{date_subdir}"
         os.makedirs(output_dir, exist_ok=True)
 
+        # Reset video_truncated flag when starting tracking
+        self.video_truncated = False
+
         # Start recording video if SAVE_DETECTION_VIDEO and self.video_writer is None and frame is not None:
         if self.save_detection_video and self.video_writer is None and self.current_frame is not None:
             video_filename = f"{output_dir}/{self.active_timestamp}_{self.class_to_track}.mp4"

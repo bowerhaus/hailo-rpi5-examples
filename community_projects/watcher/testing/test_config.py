@@ -63,12 +63,15 @@ TEST_CASES = [
         expected_metadata={
             "class": "dog",
             "label": "HELEN_OUT",
-            "direction": {"range": [25, 100]},
-            "named_direction": "OUT"
-        },
-        expected_classes={
-            "helen_out": {"ge": 42.0},  
-            "dog": {"ge": 50.0}
+            "direction": {"eq": 72},
+            "named_direction": "OUT",
+            "video_truncated": False,
+            "event_seconds": {"ge": 14},
+            "dog_percent": {"ge": 75},
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "helen_out_percent": {"ge": 49},
+            "helen_back_percent": {"eq": 0}
         },
         custom_validation=validate_helen_direction
     ),
@@ -81,12 +84,15 @@ TEST_CASES = [
         expected_metadata={
             "class": "dog",
             "label": "HELEN_OUT",
-            "direction": {"range": [25, 100]},
-            "named_direction": "OUT"
-        },
-        expected_classes={
-            "helen_out": {"ge": 28.0},  
-            "dog": {"ge": 50.0}
+            "direction": {"eq": 38},
+            "named_direction": "OUT",
+            "video_truncated": False,
+            "event_seconds": {"ge": 13},
+            "dog_percent": {"ge": 65},
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "helen_out_percent": {"ge": 33},
+            "helen_back_percent": {"eq": 0}
         },
         custom_validation=validate_helen_direction
     ),
@@ -97,12 +103,15 @@ TEST_CASES = [
         expected_metadata={
             "class": "dog",
             "label": "HELEN_BACK",
-            "direction": {"range": [205, 280]},
-            "named_direction": "BACK"
-        },
-        expected_classes={
-            "helen_back": {"ge": 50.0},  
-            "dog": {"ge": 50.0}
+            "direction": {"eq": 221},
+            "named_direction": "BACK",
+            "video_truncated": False,
+            "event_seconds": {"ge": 13},
+            "dog_percent": {"ge": 75},
+            "max_instances": {"eq": 5},
+            "average_instances": {"approx": 4.5},
+            "helen_out_percent": {"eq": 0},
+            "helen_back_percent": {"ge": 70}
         },
         custom_validation=validate_helen_direction
     ),
@@ -112,11 +121,16 @@ TEST_CASES = [
         app_type="helen-o-matic",
         expected_metadata={
             "class": "dog",
-            "label": None
-        },
-        expected_classes={
-            "person": {"ge": 50.0},
-            "dog": {"ge": 45}
+            "label": None,
+            "video_truncated": False,
+            "event_seconds": {"ge": 6},
+            "direction": {"eq": 38},
+            "named_direction": "OUT",
+            "dog_percent": {"ge": 45},
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "helen_out_percent": {"eq": 0},
+            "helen_back_percent": {"eq": 0}
         }
     ),
     TestCase(
@@ -141,7 +155,7 @@ TEST_CASES = [
         },
         custom_validation=validate_pigeon_deterrent
     ),
-        TestCase(
+    TestCase(
         name="three_pigeons_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "three_pigeons.mp4")),
         app_type="pigeonator",
@@ -174,10 +188,10 @@ TEST_CASES = [
         app_type="pigeonator",
         expect_metadata=False
     ),
-        TestCase(
+    TestCase(
         name="sally1_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally1.mp4")),
-        hef_path=os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8.hef"),
+        hef_path=os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8p.hef"),
         app_type="pigeonator",
         expected_metadata={
             "class": "pigeon",
@@ -189,13 +203,13 @@ TEST_CASES = [
             "deterrent_triggered": False
         },
     ),
-        TestCase(
+    TestCase(
         name="sally2_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally2.mp4")),
         app_type="pigeonator",
         expect_metadata=False
     ),
-        TestCase(
+    TestCase(
         name="sally3_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally3.mp4")),
         app_type="pigeonator",

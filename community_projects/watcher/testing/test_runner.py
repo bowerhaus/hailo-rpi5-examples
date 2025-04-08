@@ -390,18 +390,6 @@ class TestRunner:
                 if not is_valid:
                     result["errors"].append(f"Value mismatch for key '{key}': {error_msg}")
         
-        # Check expected class percentages using validators
-        for class_name, expected_value in test_case.expected_classes.items():
-            key = f"{class_name}_percent"
-            validator = ValueValidator.create(expected_value)
-            
-            if key not in metadata:
-                result["errors"].append(f"Expected class percentage '{key}' not found in metadata")
-            else:
-                is_valid, error_msg = validator.validate(metadata[key])
-                if not is_valid:
-                    result["errors"].append(f"Class percentage invalid for '{key}': {error_msg}")
-        
         # Run custom validation if provided
         if test_case.custom_validation:
             try:
