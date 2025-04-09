@@ -120,7 +120,8 @@ class HelenOMatic(WatcherBase):
             "helen_back_percent": helen_back_percent,
             "person_percent": person_percent,
             "dog_percent": dog_percent,  # Add dog percentage to metadata
-            "dog_seconds": dog_seconds    # Add visible dog seconds to metadata
+            "dog_seconds": dog_seconds,    # Add visible dog seconds to metadata
+            "dog_count": round(avg_detection_count)  # Add dog count by rounding average detection instances
         }
         metadata.update(new_metadata)
         return metadata
