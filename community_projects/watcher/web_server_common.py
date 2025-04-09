@@ -8,7 +8,11 @@ import jwt
 from flask import request, redirect, url_for, jsonify, send_from_directory
 
 # Constants
-SECRET_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3R1c2VyQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQxMzAzNTE0LCJleHAiOjE3NDEzMDcxMTR9.WSL53OdeTIlC1HT44_ZocGUTZf-nTm-GduDIKh-FEzo'
+# Load secret key from secrets.json in the current folder
+secrets_path = os.path.join(os.path.dirname(__file__), 'secrets.json')
+with open(secrets_path, 'r') as f:
+    secrets = json.load(f)
+    SECRET_KEY = secrets['secret_key']
 USERS_FILE = 'users.json'
 OUTPUT_DIRECTORY = 'output'
 
