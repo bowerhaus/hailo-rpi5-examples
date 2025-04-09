@@ -65,7 +65,6 @@ def logout():
     return handle_logout()
 
 @app.route('/api/register', methods=['POST'])
-@token_required
 def register():
     return handle_register()
 
@@ -76,12 +75,12 @@ def login_page():
 @app.route('/')
 @token_required
 def home():
-    return send_from_directory(app.static_folder, 'index.html')  # Changed from 'home.html' to 'index.html'
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/clock')
 @token_required
 def clock():
-    return send_from_directory(app.static_folder, 'home.html')  # Now serve home.html from /clock path
+    return send_from_directory(app.static_folder, 'home.html')
 
 @app.route('/review')
 @token_required

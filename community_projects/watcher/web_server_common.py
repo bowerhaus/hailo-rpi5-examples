@@ -49,6 +49,22 @@ def token_required(f):
     wrap.__name__ = f.__name__
     return wrap
 
+def verify_admin_token():
+    """Verify the admin authorization token from the request headers"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return False, "Missing or invalid authorization header"
+    
+    token = auth_header.split(' ')[1]
+    try:
+        # Decode and verify the token
+        jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return True, ""
+    except jwt.ExpiredSignatureError:
+        return False, "Authorization token has expired"
+    except jwt.InvalidTokenError:
+        return False, "Invalid authorization token"
+
 # Common API handlers
 def handle_login():
     data = request.get_json()
@@ -70,9 +86,27 @@ def handle_login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
 def handle_register():
+    # First verify that the request comes from an authenticated admin
+    is_valid, error_msg = verify_admin_token()
+    if not is_valid:
+        return jsonify({'error': error_msg or 'Admin authentication required'}), 401
+    
+    # Now process the registration
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    
+    # Validate input
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    # Check if username contains only allowed characters
+    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        return jsonify({'error': 'Username can only contain letters, numbers, underscores, and hyphens'}), 400
+    
+    # Check password length
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters long'}), 400
     
     users = load_users()
     if username in users:
