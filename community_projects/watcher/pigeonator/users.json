@@ -1,4 +1,22 @@
 {
-  "bower": "aa87805328ac6b06119ba6706d8adff8b59470e25634d6f28be02934cd28600f",
-  "sally": "12967c26807e37f330252292c0af69926ae48c3c6ff1489c145a9062858aa42a"
+  "bower": {
+    "password": "aa87805328ac6b06119ba6706d8adff8b59470e25634d6f28be02934cd28600f",
+    "is_admin": true
+  },
+  "sally": {
+    "password": "12967c26807e37f330252292c0af69926ae48c3c6ff1489c145a9062858aa42a",
+    "is_admin": true
+  },
+  "blair": {
+    "password": "5227c3877ca3e01f335b2bf7a8efcf3473d70a223bf9409a515cd48e6ff32ac2",
+    "is_admin": true
+  },
+  "harry": {
+    "password": "d0faa6da94a61020a4f5710c6eeff90d4bf88e83c221d04f7810a00e3aedc6f0",
+    "is_admin": false
+  },
+  "james": {
+    "password": "d0faa6da94a61020a4f5710c6eeff90d4bf88e83c221d04f7810a00e3aedc6f0",
+    "is_admin": false
+  }
 }
