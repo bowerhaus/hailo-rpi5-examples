@@ -1,0 +1,980 @@
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.split-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+}
+
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    width: 350px; /* Increased from 300px to 350px */
+    height: 100%;
+    background: #f5f5f5;
+    border-right: 1px solid #ccc;
+    flex-shrink: 0;
+}
+
+.metadata-list {
+    flex: 1;
+    min-height: 100px;
+    overflow-y: auto;
+    width: 100%; /* Ensure this fills the parent container width */
+}
+
+.vertical-splitter {
+    height: 8px;
+    background: #ddd;
+    cursor: row-resize;
+    transition: background 0.2s;
+    width: 100%; /* Ensure splitter has same width as parent */
+}
+
+.vertical-splitter:hover, 
+.vertical-splitter.dragging {
+    background: #bbb;
+}
+
+.json-viewer {
+    flex: 1;
+    min-height: 100px;
+    overflow: auto;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    background: #2d2d2d;
+    color: #fff;
+    white-space: pre;
+    tab-size: 2;
+    width: 100%; /* Changed from calc(100% - 20px) to 100% */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.json-indent {
+    padding-left: 20px;
+}
+
+.key { color: #79b6f2; }
+.string { color: #a8cc8c; }
+.number { color: #d19a66; }
+.boolean { color: #c678dd; }
+.null { color: #e06c75; }
+
+.splitter {
+    width: 8px;
+    background: #ddd;
+    cursor: col-resize;
+    transition: background 0.2s;
+}
+
+.splitter:hover,
+.splitter.dragging {
+    background: #bbb;
+}
+
+.image-viewer {
+    flex-grow: 1;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden; /* Ensure video doesn't overflow */
+}
+
+.video-js {
+    width: 100%;
+    height: 100%;
+}
+
+.button-container {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1a1a1a;
+    gap: 10px;
+}
+
+.center-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.pigeon-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    min-width: 120px;
+}
+
+.pigeon-button.yes {
+    background: #28a745;
+}
+
+.pigeon-button.yes:hover {
+    background: #218838;
+}
+
+.pigeon-button.no {
+    background: #dc3545;
+}
+
+.pigeon-button.no:hover {
+    background: #c82333;
+}
+
+.review-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #ff8c00;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.review-button:hover {
+    background: #e67e00;
+}
+
+.arrow-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.arrow-button:hover {
+    background: #444;
+}
+
+.tag-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #007bff;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    min-width: 80px;
+}
+
+.tag-button:hover {
+    background: #0056b3;
+}
+
+.event-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+    transition: all 0.2s;
+    color: #000;  /* default black text */
+    font-weight: normal;  /* default non-bold */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.event-item:hover {
+    background-color: #e9e9e9;
+}
+
+/* Text colors for different states */
+.event-item.pigeon {
+    background-color: #fff;  /* white background */
+    color: #228B22;  /* forest green text */
+    font-weight: bold;
+}
+
+.event-item.reviewed:not(.pigeon) {
+    color: #0066cc;  /* blue */
+    font-weight: bold;
+}
+
+/* Selection styles - white text with background matching original text color */
+.event-item.selected {
+    color: white;  /* ensure all selected items have white text */
+}
+
+.event-item.pigeon.selected {
+    background-color: #228B22;  /* forest green background */
+}
+
+.event-item.reviewed.selected:not(.pigeon) {
+    background-color: #0066cc;  /* blue background */
+    color: white;  /* ensure white text for contrast */
+}
+
+/* Default selection color if no other state */
+.event-item.selected:not(.pigeon):not(.reviewed) {
+    background-color: #007bff;
+}
+
+.current-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.time-indicator {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+
+.error {
+    color: #dc3545;
+    font-style: italic;
+    padding: 10px;
+}
+
+.refresh-button {
+    padding: 8px;
+    margin: 8px;
+    background: #ff8c00;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    width: calc(100% - 16px);
+    transition: background-color 0.2s;
+}
+
+.refresh-button:hover {
+    background: #e67e00;
+}
+
+.delete-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #6c757d;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+    background: #5a6268;
+}
+
+.current-date {
+    color: white;
+    font-size: 16px;
+    min-width: 100px;
+    text-align: center;
+}
+
+.date-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    background: #1a1a1a;
+}
+
+.temperature-display {
+    position: fixed;
+    top: 10px;
+    right: 120px; /* Move temperature display to the left to make room for logout button */
+    background: transparent; /* Changed from rgba(0, 0, 0, 0.7) to transparent */
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.star-icon {
+    font-size: 14px;       /* reduced size */
+    color: gold;
+    width: 20px;           /* fixed width */
+    text-align: right;
+    display: inline-block; /* ensures fixed width is enforced */
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #333;
+}
+
+.login-box {
+    background-color: #444;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 300px;
+}
+
+.login-box h2 {
+    margin-bottom: 20px;
+    color: white;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-box button:hover {
+    background-color: #0056b3;
+}
+
+.login-box .error {
+    color: #dc3545;
+    margin-top: 10px;
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.register-button {
+    background-color: #ff8c00;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.register-button:hover {
+    background-color: #e67e00;
+}
+
+.logout-button-container {
+    position: fixed;
+    top: 10px;
+    right: 10px; /* Position the logout button at the rightmost edge */
+    z-index: 1000;
+}
+
+.logout-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+    background-color: #c82333;
+}
+
+.download-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #8e44ad; /* Purple color */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px; /* Match height with other buttons */
+    box-sizing: border-box; /* Ensure padding is included in height */
+}
+
+.download-button:hover {
+    background: #7d3c98; /* Darker purple on hover */
+}
+
+.download-button .material-icons {
+    font-size: 24px; /* 50% larger than default size */
+    color: white;
+}
+
+.review-button, 
+.pigeon-button,
+.tag-button,
+.delete-button,
+.download-button {
+    height: 36px; /* Set uniform height for all buttons */
+    box-sizing: border-box;
+}
+
+/* Add panel date navigation styles - hide by default in desktop view */
+.panel-date-nav {
+    display: none; /* Hide in desktop view */
+}
+
+/* Add panel date navigation styles */
+.panel-date-nav {
+    margin-top: 0; /* Changed from 40px to 0 */
+    padding-top: 40px; /* Add padding instead of margin to prevent white gap */
+    background: #333;
+    border-bottom: 1px solid #444;
+}
+
+/* Add mobile date navigation styles */
+.mobile-date-nav {
+    background: #333;
+    padding: 8px 0;
+}
+
+/* List header styles */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #1a1a1a;
+    color: white;
+    height: 42px; /* Match height of video header */
+    box-sizing: border-box;
+}
+
+.list-header-left,
+.list-header-right {
+    flex: 1;
+}
+
+.list-header-title {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+}
+
+.cpu-temp-display {
+    color: white;
+    font-size: 14px;
+}
+
+/* Hide temperature display in desktop view */
+.temperature-display {
+    display: none; /* Hide in desktop view */
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    /* Core layout containers */
+    .split-container {
+        flex-direction: column;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
+        border-right: none;
+        padding-top: 0;
+        overflow-y: hidden; /* Change from auto to hidden to prevent double scrollbars */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Set metadata list to fixed 60% height with scrolling */
+    .metadata-list {
+        flex: 0 0 60%; /* Fixed at 60% height */
+        height: 60%; /* Fallback */
+        max-height: 60vh;
+        overflow-y: auto !important; /* Force scrolling */
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Fix JSON viewer to take remaining space */
+    .json-viewer {
+        flex: 0 0 auto; /* Don't allow flex to resize */
+        height: 35vh; /* Approximately 35% of viewport height */
+        min-height: 150px;
+        max-height: 35vh;
+        overflow-x: auto !important; /* Enable horizontal scrolling */
+        overflow-y: auto !important; /* Enable vertical scrolling */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        box-sizing: border-box;
+        width: 100%;
+        white-space: pre; /* Preserve formatting */
+        word-wrap: normal; /* Prevent word wrapping */
+        font-size: 10px; /* Reduce font size for mobile from 11px to 10px */
+    }
+    
+    /* Ensure vertical splitter is clearly visible and takes minimal space */
+    .vertical-splitter {
+        flex: 0 0 auto;
+        height: 10px;
+        background: #aaa;
+        border-top: 1px solid #666;
+        border-bottom: 1px solid #666;
+        display: block;
+    }
+
+    /* Ensure refresh button is at the bottom with proper spacing */
+    .refresh-button {
+        width: 100%;
+        margin: 0 0 10px 0;
+        box-sizing: border-box;
+    }
+
+    /* Make sure event items don't have extra margins but keep padding for content */
+    .event-item {
+        padding: 5px 10px !important; /* Increase padding to match taller height */
+        margin: 0 !important;
+        height: 30px !important; /* Increase from 24px to 30px */
+        min-height: 30px !important; /* Ensure minimum height is also updated */
+        max-height: 30px !important; /* Cap the maximum height */
+        font-size: 16px !important; /* Increase font size slightly */
+        box-sizing: border-box !important;
+        line-height: 1.2 !important; /* Tighter line height */
+        display: flex !important; /* Ensure flex layout for alignment */
+        align-items: center !important; /* Center content vertically */
+        overflow: hidden !important; /* Hide overflow content */
+        white-space: nowrap !important; /* Prevent text wrapping */
+        text-overflow: ellipsis !important; /* Show ellipsis for overflow text */
+    }
+
+    /* Mobile video modal */
+    .mobile-video-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 2000;
+    }
+
+    .mobile-video-modal.active {
+        display: flex;
+    }
+
+    .mobile-video-modal .mobile-video-pane {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+    }
+
+    .mobile-video-modal video,
+    .mobile-video-modal .video-js {
+        width: 100%;
+        height: 50vh !important;
+        object-fit: contain;
+    }
+
+    /* Button container and groups */
+    .mobile-video-modal .button-container {
+        padding: 10px;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 0;
+    }
+
+    .mobile-video-modal .mobile-center-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: auto auto;
+        gap: 5px;
+        width: 100%;
+    }
+
+    /* Common button styles */
+    .mobile-video-modal .review-button,
+    .mobile-video-modal .delete-button,
+    .mobile-video-modal .pigeon-button,
+    .mobile-video-modal .download-button,
+    .mobile-video-modal .tag-button {
+        height: 40px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+    }
+
+    /* Full-width buttons */
+    .mobile-video-modal .review-button,
+    .mobile-video-modal .delete-button,
+    .mobile-video-modal .download-button {
+        width: 100%;
+    }
+
+    /* Grid buttons */
+    .mobile-video-modal .pigeon-button {
+        width: 100%;
+    }
+
+    /* Tag button in grid positioned in bottom right */
+    .mobile-video-modal .tag-button {
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+    }
+
+    /* Modal close button */
+    .modal-close-btn {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid white;
+        color: white;
+        font-size: 20px;
+        z-index: 2001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+    }
+
+    /* Mobile header */
+    body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 40px;
+        background-color: #333;
+        z-index: 990;
+    }
+
+    /* Show temperature display in mobile view */
+    .temperature-display {
+        position: fixed;
+        top: 8px;
+        left: 10px;
+        color: white;
+        z-index: 995;
+        background: transparent;
+        display: block; /* Ensure it's visible in mobile view */
+    }
+
+    .logout-button-container {
+        position: fixed;
+        top: 8px;
+        right: 10px;
+        z-index: 995;
+        display: block;
+    }
+
+    /* Tag and Download buttons side by side */
+    .tag-download-container {
+        display: flex;
+        gap: 5px;
+        width: 100%;
+    }
+
+    .mobile-video-modal .tag-download-container .tag-button,
+    .mobile-video-modal .tag-download-container .download-button {
+        flex: 1; /* Equal width */
+        height: 40px;
+        padding: 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border-radius: 4px;
+        border: none;
+        margin: 0;
+    }
+
+    /* Remove specific positioning for tag button as it's no longer in the grid */
+    .mobile-video-modal .tag-button {
+        grid-column: unset;
+        grid-row: unset;
+        background: #007bff;
+    }
+
+    /* Remove specific positioning for download button as it's no longer a standalone button */
+    .mobile-video-modal .download-button {
+        background: #8e44ad;
+    }
+
+    .refresh-button {
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+
+    /* Make sure event items don't have extra margins */
+    .event-item {
+        padding: 10px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    /* Ensure all containers have no unexpected padding/margins */
+    .split-container {
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+    }
+
+    .left-panel {
+        width: 100%;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
+        border-right: none;
+        padding: 0;  /* Ensure no padding */
+        box-sizing: border-box;
+    }
+
+    /* Ensure metadata list takes full width */
+    .metadata-list {
+        width: 100%;
+        flex: 1;
+        overflow-y: auto;
+        padding: 0; /* Remove any padding */
+        margin: 0; /* Remove any margin */
+    }
+
+    /* Force all event items to take full width */
+    .event-item {
+        width: 100% !important; /* Override any other width settings */
+        padding: 10px;
+        margin: 0 !important; /* Remove any margins */
+        box-sizing: border-box;
+        max-width: 100%; /* Ensure no max-width constraints */
+    }
+
+    /* Fix refresh button */
+    .refresh-button {
+        width: 100%;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+
+    /* Reset all potential containers to full width */
+    body, 
+    .split-container, 
+    .left-panel, 
+    .metadata-list, 
+    .json-viewer,
+    .event-item {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Add specific padding only to the elements that need it */
+    .event-item {
+        padding: 10px !important;
+    }
+    
+    /* Remove any potential floating or absolute positioning */
+    .metadata-list > * {
+        float: none !important;
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+    }
+    
+    /* Debug outlines - uncomment to visualize boxes */
+    /*.metadata-list { outline: 2px solid red !important; }
+    .event-item { outline: 2px solid blue !important; }*/
+
+    /* Style mobile date navigation */
+    .mobile-video-modal .date-navigation {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        background: #333;
+        margin-bottom: 0;
+    }
+
+    .mobile-video-modal .current-date {
+        color: white;
+        font-size: 14px;
+        min-width: 90px;
+        text-align: center;
+    }
+
+    .mobile-video-modal .arrow-button {
+        padding: 5px 12px;
+        font-size: 14px;
+    }
+
+    /* Make panel date nav visible on mobile */
+    .panel-date-nav {
+        display: flex; /* Show in mobile view */
+        justify-content: center;
+        margin-top: 0;
+        padding-top: 40px;
+        padding-bottom: 8px;
+        background: #333;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Hide the mobile modal date nav to avoid duplication */
+    .mobile-date-nav {
+        display: none;
+    }
+    
+    /* Adjust top margin for metadata list */
+    .metadata-list {
+        margin-top: 0;
+    }
+
+    .list-header {
+        display: none !important; /* Use !important to override any other display settings */
+    }
+
+    /* Make sure there's no empty space where the header was */
+    .left-panel {
+        width: 100%;
+        height: calc(100vh - 40px);
+        margin-top: 40px;
+        border-right: none;
+        padding-top: 0; /* Ensure no extra padding at top */
+    }
+
+    .list-header {
+        display: none; /* Hide the list header in mobile view */
+    }
+
+    /* Ensure correct layout for mobile view */
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 40px);
+        overflow-y: auto; /* Allow the panel to scroll */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+
+    /* Fix JSON viewer scrolling */
+    .json-viewer {
+        flex: 0 0 auto; /* Don't allow flex to resize */
+        min-height: 150px;
+        max-height: 40vh;
+        height: auto;
+        overflow-y: scroll !important; /* Force scrolling */
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        font-size: 10px; /* Reduce font size for mobile from 11px to 10px */
+    }
+    
+    /* Make metadata list scrollable */
+    .metadata-list {
+        flex: 1 1 auto;
+        overflow-y: visible; /* Let parent container handle scrolling */
+    }
+    
+    /* Ensure vertical splitter is clearly visible */
+    .vertical-splitter {
+        flex: 0 0 auto;
+        height: 10px;
+        background: #aaa;
+        border-top: 1px solid #666;
+        border-bottom: 1px solid #666;
+    }
+
+    /* Make star icon smaller in mobile view */
+    .star-icon {
+        font-size: 11px !important;
+        margin-left: 2px !important;
+        line-height: 1 !important; /* Ensure icon doesn't increase line height */
+        display: inline-flex !important; /* Better alignment */
+        align-items: center !important;
+    }
+
+    /* Override any conflicting styles that might be preventing height changes */
+    .event-item * {
+        line-height: inherit !important;
+    }
+}
+
+/* List header styles for desktop view only */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #1a1a1a;
+    color: white;
+    height: 42px;
+    box-sizing: border-box;
+}

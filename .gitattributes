@@ -1,0 +1,3 @@
+**/certificate/* filter=git-crypt diff=git-crypt
+*.mp4 filter=git-crypt diff=git-crypt
+

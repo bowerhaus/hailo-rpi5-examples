@@ -1,13 +1,81 @@
-   {
-     "version": "0.2.0",
-     "configurations": [
-       {
-         "name": "Python: Current File", // Test
-         "type": "debugpy",
-         "request": "launch",
-         "program": "${file}",
-         "args": ["--input", "rpi", "--class-to-track", "car", "--use-frame"],
-         "console": "integratedTerminal"
-       }
-     ]
-   }
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Run Helen-O-Matic",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/helen-o-matic",
+            "program": "${workspaceFolder}/community_projects/watcher/helen-o-matic/helen_o_matic.py",
+            "console": "integratedTerminal",
+            "args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "rpi"]
+            //"args": ["--use-frame", "--hef-path", "models/helen-o-matic.v7.yolov8p.hef", "--labels-json", "models/helen-o-matic.v5-labels.json", "--input", "test_data/helen_back.mp4"]
+        },
+        {
+            "name": "Python: Run Pigeonator",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/pigeonator",
+            "program": "${workspaceFolder}/community_projects/watcher/pigeonator/pigeonator.py",
+            "console": "integratedTerminal",
+            "args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v4.yolov8p.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "rpi"]
+            //"args": ["--use-frame", "--hef-path", "models/pigeonator-mk3-b.v4.yolov8p.hef", "--labels-json", "models/pigeonator-mk3-b.v3-labels.json", "--input", "test_data/pond_back1.mp4"]
+        },
+        {
+            "name": "Python: Run All Watcher Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Run Helen-O-Matic Tests Only",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "helen-o-matic"]
+        },
+        {
+            "name": "Python: Run Pigeonator Tests Only",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "pigeonator"]
+        },
+        {
+            "name": "Python: Run Test Runner (Interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--interactive"]
+        },
+        {
+            "name": "Python: Run Helen-O-Matic Tests (Interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "helen-o-matic", "--interactive"]
+        },
+        {
+            "name": "Python: Run Pigeonator Tests (Interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "pigeonator", "--interactive"]
+        }
+    ]
+}

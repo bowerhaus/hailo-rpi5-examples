@@ -1,0 +1,24 @@
+detection_pipeline.py
+gstreamer_helper_pipelines.py
+
+# Temporary images and videos, and logs
+output/
+input/
+logs/
+
+# Temporary files   
+helenback.mp3
+helenout.mp3
+dogalert.mp3
+hello.mp3
+classalert.mp3
+clock*.png
+
+# Model files
+models/*.hef
+
+# Config files
+config.json
+
+#Certificates
+privkey.pem

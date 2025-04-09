@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home - Clock</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    body {
+      background-color: #333;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; /* Changed from center to handle mobile better */
+      min-height: 100vh;
+      margin: 0;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-y: auto;          /* Allow vertical scrolling */
+      scrollbar-width: none;     /* Hide scrollbar in Firefox */
+      -ms-overflow-style: none;  /* Hide scrollbar in IE/Edge */
+    }
+
+    /* Hide scrollbar in Chrome/Safari/newer Edge */
+    body::-webkit-scrollbar {
+      display: none;
+    }
+
+    #clockContainer {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      width: min(90vw, 1024px); /* Responsive width */
+      margin: 0 auto;
+    }
+
+    #clockImg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    #overlayText {
+      position: fixed;  /* Changed from absolute to fixed */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      font-size: clamp(1em, 5vw, 2em); /* Responsive font size */
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.5em 1em;
+      border-radius: 4px;
+      display: block;  /* Initially visible while loading */
+      z-index: 1000;  /* Ensure it appears above other content */
+    }
+
+    #reviewBtn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background-color: #007bff;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: clamp(40px, 8vw, 80px); /* Responsive size */
+      height: clamp(40px, 8vw, 80px);
+      display: none; /* Initially hidden until refreshed */
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      font-size: clamp(12px, 2vw, 16px); /* Responsive font size */
+      cursor: pointer;
+    }
+
+    #dayToggles {
+      margin: 20px auto;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      visibility: visible;  /* Changed from hidden - show on initial load */
+      width: 100%;
+      max-width: 100%;
+      padding: 10px 0; /* Add padding for scroll area */
+      overflow: visible; /* Changed from auto to visible */
+    }
+    
+    .filter-group {
+      display: flex;
+      gap: 10px;  /* Consistent gap between all buttons */
+      align-items: center;
+      flex-wrap: nowrap; /* Changed from wrap to nowrap */
+      justify-content: center;
+      width: min-content; /* Ensure it takes minimum width needed */
+    }
+
+    .day-toggle, .filter-button {
+      padding: clamp(6px, 1.5vw, 16px);
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      font-size: clamp(12px, 3vw, 16px); /* Responsive font size */
+      min-width: clamp(30px, 8vw, 50px); /* Minimum width for buttons */
+      text-align: center;
+      touch-action: manipulation; /* Better touch handling */
+      opacity: 1;
+      transition: all 0.2s ease;
+    }
+
+    .day-toggle {
+      border: 2px solid #007bff; /* Blue border */
+      background-color: #007bff; /* Blue background */
+      color: white;
+    }
+
+    .filter-button {
+      border: 2px solid #ff8c00; /* Orange border */
+      background-color: #ff8c00; /* Orange background */
+      color: white;
+    }
+    
+    .day-toggle.inactive {
+      background-color: transparent;
+      color: #007bff; /* Blue text */
+      opacity: 0.7;
+    }
+
+    .filter-button.inactive {
+      background-color: transparent;
+      color: #ff8c00; /* Orange text */
+      opacity: 0.7;
+    }
+
+    /* Add hover states */
+    .day-toggle:hover, .filter-button:hover {
+      opacity: 0.9;
+    }
+
+    .day-toggle.inactive:hover {
+      background-color: rgba(0, 123, 255, 0.1); /* Light blue hover */
+    }
+
+    .filter-button.inactive:hover {
+      background-color: rgba(255, 140, 0, 0.1); /* Light orange hover */
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding-top: 20px; /* Reduced from 60px now that we don't have nav buttons */
+      }
+
+      .filter-group {
+        gap: 5px;
+        transform: scale(0.85);  /* Slightly smaller scale for mobile */
+        transform-origin: center center;
+      }
+      
+      .filter-group > div {
+        display: flex;
+        gap: 5px;
+      }
+
+      .day-toggle, .filter-button {
+        padding: 6px; /* Reduced padding */
+        font-size: 12px; /* Smaller font */
+        min-width: auto; /* Remove minimum width constraint */
+      }
+
+      #dayToggles {
+        margin: 20px auto; /* Reduced top margin since we don't have nav buttons */
+        position: relative; /* Position relative */
+        padding-bottom: 20px; /* Add bottom padding */
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Removed the navigation buttons div -->
+
+  <div id="dayToggles">
+    <div class="filter-group">
+      <button class="filter-button" id="weekdaysFilter">Weekdays</button>
+      <button class="day-toggle" data-day="Monday">Mo</button>
+      <button class="day-toggle" data-day="Tuesday">Tu</button>
+      <button class="day-toggle" data-day="Wednesday">We</button>
+      <button class="day-toggle" data-day="Thursday">Th</button>
+      <button class="day-toggle" data-day="Friday">Fr</button>
+      <button class="day-toggle" data-day="Saturday">Sa</button>
+      <button class="day-toggle" data-day="Sunday">Su</button>
+      <button class="filter-button" id="weekendFilter">Weekend</button>
+    </div>
+  </div>
+  
+  <div id="clockContainer">
+    <img id="clockImg" src="/api/clock_image" alt="Clock Image" 
+         onload="hideOverlay()" 
+         onerror="hideOverlay()" />
+    <div id="overlayText"></div>
+  </div>
+  <script>
+    let refreshTimeout = null;
+
+    const messages = [
+      "GETTING THE FUNKY DATA...",
+      "HANG TIGHT, WE'RE ON IT...",
+      "FETCHING THE COOL STUFF...",
+      "JUST A MOMENT, PLEASE...",
+      "LOADING THE MAGIC...",
+      "HOLD ON, ALMOST THERE...",
+      "RETRIEVING AWESOMENESS...",
+      "GATHERING THE GOODS...",
+      "PLEASE WAIT, GOOD THINGS TAKE TIME...",
+      "PREPARING SOMETHING SPECIAL..."
+    ];
+
+    function getRandomMessage() {
+      return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Keep the navigation functions for potential future use, but they're not visible on the page
+    function navigateToReview() {
+      window.location.href = '/';
+    }
+
+    function handleLogout() {
+      // Clear local storage
+      localStorage.clear();
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+
+    // Set initial overlay text
+    document.addEventListener('DOMContentLoaded', function() {
+      const overlay = document.getElementById('overlayText');
+      overlay.textContent = getRandomMessage();
+    });
+
+    function scheduleRefresh() {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
+      refreshTimeout = setTimeout(() => {
+        refreshClock();
+        refreshTimeout = null;
+      }, 2000);
+    }
+
+    // Update weekdays filter handler
+    document.getElementById('weekdaysFilter').addEventListener('click', () => {
+      const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const weekdayButtons = document.querySelectorAll('.day-toggle[data-day]');
+      const someWeekdaysActive = Array.from(weekdayButtons)
+        .filter(btn => weekdays.includes(btn.getAttribute('data-day')))
+        .some(btn => !btn.classList.contains('inactive'));
+
+      weekdayButtons.forEach(btn => {
+        if (weekdays.includes(btn.getAttribute('data-day'))) {
+          btn.classList.toggle('inactive', someWeekdaysActive);
+        }
+      });
+      document.getElementById('weekdaysFilter').classList.toggle('inactive', someWeekdaysActive);
+      scheduleRefresh();  // Use debounced refresh
+    });
+
+    // Update weekend filter handler
+    document.getElementById('weekendFilter').addEventListener('click', () => {
+      const weekend = ['Saturday', 'Sunday'];
+      const weekendButtons = document.querySelectorAll('.day-toggle[data-day]');
+      const someWeekendActive = Array.from(weekendButtons)
+        .filter(btn => weekend.includes(btn.getAttribute('data-day')))
+        .some(btn => !btn.classList.contains('inactive'));
+
+      weekendButtons.forEach(btn => {
+        if (weekend.includes(btn.getAttribute('data-day'))) {
+          btn.classList.toggle('inactive', someWeekendActive);
+        }
+      });
+      document.getElementById('weekendFilter').classList.toggle('inactive', someWeekendActive);
+      scheduleRefresh();  // Use debounced refresh
+    });
+
+    // Update individual day toggle handler
+    document.querySelectorAll('.day-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('inactive');
+        
+        // Update weekday/weekend filter button states
+        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const weekend = ['Saturday', 'Sunday'];
+        const currentDay = btn.getAttribute('data-day');
+        
+        if (weekdays.includes(currentDay)) {
+          const allWeekdaysInactive = weekdays.every(day => 
+            document.querySelector(`[data-day="${day}"]`).classList.contains('inactive')
+          );
+          document.getElementById('weekdaysFilter').classList.toggle('inactive', allWeekdaysInactive);
+        }
+        
+        if (weekend.includes(currentDay)) {
+          const allWeekendInactive = weekend.every(day => 
+            document.querySelector(`[data-day="${day}"]`).classList.contains('inactive')
+          );
+          document.getElementById('weekendFilter').classList.toggle('inactive', allWeekendInactive);
+        }
+        
+        scheduleRefresh();
+      });
+    });
+
+    function getSelectedDays() {
+      const activeDays = [];
+      document.querySelectorAll('.day-toggle').forEach(btn => {
+        if (!btn.classList.contains('inactive')) {
+          activeDays.push(btn.getAttribute('data-day'));
+        }
+      });
+      return activeDays.join(',');
+    }
+
+    function refreshClock() {
+      const img = document.getElementById('clockImg');
+      const overlay = document.getElementById('overlayText');
+      const dayToggles = document.getElementById('dayToggles');
+      
+      overlay.textContent = getRandomMessage();
+      overlay.style.display = 'block';
+      dayToggles.style.visibility = 'hidden';  // Hide day toggles during refresh
+      
+      // Clear any pending refresh timeout
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+        refreshTimeout = null;
+      }
+      
+      const selectedDays = getSelectedDays();
+      img.src = `/api/clock_image?days=${encodeURIComponent(selectedDays)}&_=${new Date().getTime()}`;
+      document.getElementById('reviewBtn').style.display = 'none';
+    }
+
+    function hideOverlay() {
+      const overlay = document.getElementById('overlayText');
+      const dayToggles = document.getElementById('dayToggles');
+      
+      overlay.style.display = 'none';
+      dayToggles.style.visibility = 'visible';  // Show day toggles when refresh complete
+      document.getElementById('reviewBtn').style.display = 'flex';
+    }
+
+    // Automatically refresh the clock every 5 minutes
+    setInterval(refreshClock, 300000);
+  </script>
+</body>
+</html>

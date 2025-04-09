@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Events</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        #cpuTemp {
+            position: fixed;
+            top: 10px;
+            right: 120px; /* Move temperature display to the left to make room for logout button */
+            background: transparent; /* Changed from rgba(0, 0, 0, 0.7) to transparent */
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .star-icon {
+            color: gold;
+            margin-left: 5px;
+            font-size: 14px;
+        }
+        
+        /* Add style for clock button */
+        .clock-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-right: 8px;
+        }
+        
+        .clock-button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="cpuTemp">CPU: -- °C</div>
+    <div class="logout-button-container">
+        <!-- Add clock button next to logout button -->
+        <button class="clock-button" onclick="navigateToClock()">Clock</button>
+        <button class="logout-button" onclick="handleLogout()">Logout</button>
+    </div>
+    <div class="split-container">
+        <div class="left-panel">
+            <!-- Modify the header bar to remove the title -->
+            <div class="list-header">
+                <div class="list-header-left">
+                    <div class="cpu-temp-display">CPU: -- °C</div>
+                </div>
+                <!-- Remove the Events title -->
+                <div class="list-header-right"></div>
+            </div>
+            <!-- Add date navigation at the top of left panel -->
+            <div class="date-navigation panel-date-nav">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="panelDateDisplay"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
+            <div class="metadata-list" id="metadataList"></div>
+            <button class="refresh-button" onclick="updateMetadataList()">Refresh</button>
+            <div class="vertical-splitter" id="verticalSplitter"></div>
+            <div class="json-viewer" id="jsonViewer"></div>
+        </div>
+        <div class="splitter" id="splitter"></div>
+        <div class="image-viewer">
+            <div class="date-navigation">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="currentDate"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
+            <div class="image-container">
+                <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360">
+                    <p class="vjs-no-js">
+                      To view this video please enable JavaScript, and consider upgrading to a web browser that
+                      <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                    </p>
+                </video>
+                <div class="time-indic-Maticator" id="timeIndicator"></div>
+            </div>
+            <div class="button-container">
+                <!-- New toggle button with id "toggle-reviewed-button" inserted to the left -->
+                <button id="toggle-reviewed-button" class="toggle-reviewed-button" onclick="toggleReviewed()">Reviewed</button>
+                <button class="download-button" id="downloadButton" onclick="downloadCurrentVideo()">
+                    <i class="material-icons">file_download</i>
+                </button>
+                <div class="direction-buttons-group">
+                    <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
+                    <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
+                    <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                    <!-- Moved tag button inside the direction buttons group to the right of OTHER button -->
+                    <button class="direction-button tag-button" onclick="toggleTagged()">Tag</button>
+                </div>
+                <!-- Removed the tag button from here -->
+                <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Updated mobile modal popup for video playback -->
+    <div id="mobileVideoModal" class="mobile-video-modal">
+        <button class="modal-close-btn" onclick="closeMobileModal()">&times;</button>
+        <div class="mobile-video-pane">
+            <video id="mobileVideoPlayer" class="video-js vjs-default-skin" controls preload="auto">
+                <p class="vjs-no-js">To view this video please enable JavaScript.</p>
+            </video>
+            <!-- Add mobile date navigation here -->
+            <div class="date-navigation mobile-date-nav">
+                <button class="arrow-button" onclick="changeDate(1)">←</button>
+                <div class="current-date" id="mobileDateDisplay"></div>
+                <button class="arrow-button" onclick="changeDate(-1)">→</button>
+            </div>
+            <div class="button-container">
+                <button id="mobile-toggle-reviewed-button" class="toggle-reviewed-button" onclick="toggleReviewed()">Reviewed</button>
+                <div class="direction-buttons-group">
+                    <button class="direction-button helen-out" onclick="updateDirection('HELEN OUT')">HELEN OUT</button>
+                    <button class="direction-button helen-back" onclick="updateDirection('HELEN BACK')">HELEN BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OUT')">OUT</button>
+                    <button class="direction-button" onclick="updateDirection('BACK')">BACK</button>
+                    <button class="direction-button" onclick="updateDirection('OTHER')">OTHER</button>
+                    <!-- Swap position: Move tag button to bottom right grid position -->
+                    <button class="tag-button" id="mobileTagButton" onclick="toggleTagged()">Tag</button>
+                </div>
+                <!-- Removed tag button from here -->
+                <!-- Add download button before delete button -->
+                <button class="download-button" id="mobileDownloadButton" onclick="downloadCurrentVideo()">
+                    <i class="material-icons">file_download</i>
+                </button>
+                <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
+            </div>
+            <div class="mobile-close-container">
+                <button class="close-button" onclick="closeMobileModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <!-- Remove or comment out this line -->
+    <!-- <script src="/static/App.js"></script> -->
+
+    <script>
+        // Function to fetch and update CPU temperature
+        function updateCpuTemp() {
+            fetch('/api/cpu_temperature')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.cpu_temp !== undefined) {
+                        // Update both desktop and mobile temperature displays
+                        document.getElementById('cpuTemp').textContent = `CPU: ${data.cpu_temp.toFixed(1)} °C`;
+                        document.querySelector('.cpu-temp-display').textContent = `CPU: ${data.cpu_temp.toFixed(1)} °C`;
+                    } else {
+                        document.getElementById('cpuTemp').textContent = 'CPU: -- °C';
+                        document.querySelector('.cpu-temp-display').textContent = 'CPU: -- °C';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching CPU temperature:', error);
+                    document.getElementById('cpuTemp').textContent = 'CPU: -- °C';
+                    document.querySelector('.cpu-temp-display').textContent = 'CPU: -- °C';
+                });
+        }
+
+        // Update CPU temperature every 60 seconds
+        setInterval(updateCpuTemp, 60000);
+        // Initial fetch when window loads
+        window.addEventListener('load', updateCpuTemp);
+
+        // Add current date handling
+        let currentDirectory = '';
+        let availableDates = [];
+
+        function getCurrentDateDir() {
+            const now = new Date();
+            return now.getFullYear().toString() +
+                   (now.getMonth() + 1).toString().padStart(2, '0') +
+                   now.getDate().toString().padStart(2, '0');
+        }
+
+        function formatDisplayDate(dateStr) {
+            return `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
+        }
+
+        function updateDateDisplay() {
+            const dateElement = document.getElementById('currentDate');
+            const mobileDateElement = document.getElementById('mobileDateDisplay');
+            const panelDateElement = document.getElementById('panelDateDisplay');
+            const formattedDate = formatDisplayDate(currentDirectory);
+            
+            dateElement.textContent = formattedDate;
+            mobileDateElement.textContent = formattedDate;
+            panelDateElement.textContent = formattedDate;
+        }
+
+        // New helper to refresh available dates from the server
+        async function refreshAvailableDates() {
+            try {
+                const response = await fetch('/api/dates');
+                availableDates = await response.json();
+            } catch (error) {
+                console.error('Error refreshing dates:', error);
+            }
+        }
+
+        // Modified changeDate function to check folder existence before updating
+        async function changeDate(offset) {
+            await refreshAvailableDates(); // Refresh the date list
+
+            const currentIndex = availableDates.indexOf(currentDirectory);
+            const newIndex = currentIndex + offset;
+
+            // Check if the new index is valid after refresh
+            if (newIndex < 0 || newIndex >= availableDates.length) {
+                console.warn('Date folder not found for the selected date.');
+                return;
+            }
+            currentDirectory = availableDates[newIndex];
+            updateDateDisplay();
+            clearSelection();
+            document.getElementById('metadataList').innerHTML = ''; // Clear the list
+            lastMetadataTime = ''; // Reset lastMetadataTime when date changes
+            updateMetadataList();
+            setupAutoRefresh();
+        }
+
+        function setupAutoRefresh() {
+            const today = getCurrentDateDir();
+            if (currentDirectory === today) {
+                if (!window.autoRefreshInterval) {
+                    window.autoRefreshInterval = setInterval(() => {
+                        updateMetadataList();
+                    }, 30000);
+                }
+            } else {
+                if (window.autoRefreshInterval) {
+                    clearInterval(window.autoRefreshInterval);
+                    window.autoRefreshInterval = null;
+                }
+            }
+        }
+
+        let isResizing = false;
+        let lastDownX = 0;
+        let currentWidth = 350;
+
+        // Splitter functionality
+        const splitter = document.getElementById('splitter');
+        const metadataList = document.getElementById('metadataList');
+        
+        splitter.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            lastDownX = e.clientX;
+            splitter.classList.add('dragging');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.split-container');
+            const leftPanel = document.querySelector('.left-panel');
+            const listPanel = document.getElementById('metadataList');
+            const jsonViewer = document.getElementById('jsonViewer');
+            
+            const delta = e.clientX - lastDownX;
+            currentWidth = Math.max(200, Math.min(container.offsetWidth * 0.8, currentWidth + delta));
+            
+            // Update both left panel and its children
+            leftPanel.style.width = `${currentWidth}px`;
+            listPanel.style.width = `${currentWidth}px`;
+            jsonViewer.style.width = `${currentWidth}px`;
+            
+            lastDownX = e.clientX;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            splitter.classList.remove('dragging');
+        });
+
+        // Vertical splitter functionality
+        let isVerticalResizing = false;
+        let lastDownY = 0;
+        let splitRatio = 0.6; // 60% for list, 40% for JSON
+
+        const verticalSplitter = document.getElementById('verticalSplitter');
+        const listPanel = document.getElementById('metadataList');
+        const jsonPanel = document.getElementById('jsonViewer');
+        
+        verticalSplitter.addEventListener('mousedown', (e) => {
+            isVerticalResizing = true;
+            lastDownY = e.clientY;
+            verticalSplitter.classList.add('dragging');
+            e.preventDefault(); // Prevent text selection while dragging
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isVerticalResizing) return;
+            
+            const container = listPanel.parentElement;
+            const containerHeight = container.offsetHeight;
+            const mouseY = e.clientY;
+            const containerRect = container.getBoundingClientRect();
+            const relativeY = mouseY - containerRect.top;
+            
+            splitRatio = Math.max(0.1, Math.min(0.9, relativeY / containerHeight));
+            
+            // Update heights
+            listPanel.style.flex = splitRatio;
+            jsonPanel.style.flex = 1 - splitRatio;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isVerticalResizing) {
+                isVerticalResizing = false;
+                verticalSplitter.classList.remove('dragging');
+            }
+        });
+
+        // Set initial panel sizes
+        listPanel.style.flex = splitRatio;
+        jsonPanel.style.flex = 1 - splitRatio;
+
+        // Rest of the existing JavaScript for image cycling
+        let currentImages = [];
+        let currentIndex = 0;
+        let imageInterval = null;
+        let selectedItem = null;
+        let currentJson = null;  // Store current JSON data
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        let lastMetadataTime = ''; // Time string of last metadata refresh
+
+        // Add variables for tracking tap/click events
+        let lastTapTime = 0;
+        let lastTapItem = null;
+        const doubleTapDelay = 300; // ms
+
+        async function updateMetadataList() {
+            console.log('Fetching metadata list for date:', currentDirectory);
+            const list = document.getElementById('metadataList');
+
+            let url = `/api/metadata?date=${currentDirectory}`;
+
+            if (lastMetadataTime) {
+                url += `&since=${lastMetadataTime}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const files = await response.json();
+
+                // Show a placeholder if no new metadata is present
+                if (files.length === 0 && list.children.length === 0) {
+                    list.innerHTML = '<div class="event-item">No events found</div>';
+                    return;
+                }
+
+                // Add click handler to the list container for deselection
+                list.onclick = function(e) {
+                    if (e.target === list) {
+                        clearSelection();
+                    }
+                };
+
+                // Create an array of promises for fetching JSON data
+                const promises = files.map(file =>
+                    fetch(`/media/${file}`)
+                        .then(response => response.json())
+                        .then(json => ({ file, json }))
+                        .catch(error => ({ file, json: null }))
+                );
+
+                // Wait for all JSON data to be fetched
+                const results = await Promise.all(promises);
+
+                // Create new items
+                const newItems = results.map(({ file, json }) => {
+                    const item = document.createElement('div');
+                    item.className = 'event-item';
+
+                    // First set reviewed class if the item is reviewed
+                    if (json && json.reviewed) {
+                        item.classList.add('reviewed');
+                    }
+
+                    // Then add helen-specific classes if present
+                    if (json && json.label === 'HELEN_OUT') {
+                        item.classList.add('helen-out');
+                    } else if (json && json.label === 'HELEN_BACK') {
+                        item.classList.add('helen-back');
+                    }
+
+                    if (file === selectedItem) {
+                        item.classList.add('selected');
+                    }
+
+                    // Show the filename without .json extension
+                    item.textContent = file.replace('.json', '');
+                    item.setAttribute('data-filename', file);
+                    
+                    // Use the new handler for both single and double taps
+                    item.onclick = (e) => handleListItemClick(file, item, e);
+                    
+                    // Add star icon for tagged items
+                    if (json && json.tagged) {
+                        const starSpan = document.createElement('span');
+                        starSpan.className = 'star-icon';
+                        starSpan.textContent = '⭐';
+                        item.appendChild(starSpan);
+                    }
+                    
+                    return item;
+                });
+
+                // Add new items to the top of the list
+                const firstChild = list.firstChild;
+                newItems.forEach(item => {
+                    list.insertBefore(item, firstChild);
+                });
+
+                // Update the last refresh timestamp
+                if (files.length > 0) {
+                    const lastFile = files[0];
+                    lastMetadataTime = lastFile.split('_')[1]; // Extract HHMMSS from filename
+                }
+
+            } catch (error) {
+                console.error('Error fetching metadata:', error);
+                const list = document.getElementById('metadataList');
+                list.innerHTML = '<div class="event-item error">Error loading events</div>';
+            }
+        }
+
+        // Updated clearSelection to stop, remove event listeners, clear source, and remove video content
+        function clearSelection() {
+            selectedItem = null;
+            currentJson = null;
+            document.querySelectorAll('.event-item').forEach(item => item.classList.remove('selected'));
+
+            // Clear JSON viewer
+            document.getElementById('jsonViewer').innerHTML = '';
+
+            // Stop and clear video player contents
+            const videoPlayer = videojs('videoPlayer');
+            if (videoPlayer) {
+                videoPlayer.pause();
+                videoPlayer.reset();
+            }
+            
+            document.getElementById('timeIndicator').textContent = '';
+        }
+
+        function formatJsonValue(value, indent) {
+            if (typeof value === 'string') return `<span class="string">"${value}"</span>`;
+            if (typeof value === 'number') return `<span class="number">${value}</span>`;
+            if (typeof value === 'boolean') return `<span class="boolean">${value}</span>`;
+            if (value === null) return `<span class="null">null</span>`;
+            if (Array.isArray(value)) {
+                const items = value.map(item => formatJsonValue(item, indent + 2)).join(',\n' + ' '.repeat(indent + 2));
+                return `[\n${' '.repeat(indent + 2)}${items}\n${' '.repeat(indent)}]`;
+            }
+            if (typeof value === 'object') {
+                return formatJsonObject(value, indent + 2);
+            }
+            return String(value);
+        }
+
+        function formatJsonObject(obj, indent = 0) {
+            const entries = Object.entries(obj);
+            const lines = entries.map(([key, value]) => {
+                const formattedValue = formatJsonValue(value, indent);
+                return `${' '.repeat(indent)}<span class="key">"${key}"</span>: ${formattedValue}`;
+            });
+            return lines.join(',\n');
+        }
+
+        function displayJson(json) {
+            currentJson = json;  // Save reference to current JSON
+            const viewer = document.getElementById('jsonViewer');
+            viewer.innerHTML = `{\n${formatJsonObject(json, 2)}\n}`;
+        }
+
+        function closeMobileModal() {
+            const modal = document.getElementById('mobileVideoModal');
+            modal.classList.remove('active');
+            const mobileVideoPlayer = videojs('mobileVideoPlayer');
+            mobileVideoPlayer.pause();
+            mobileVideoPlayer.reset();
+        }
+
+        // Modified selectEvent function to handle mobile differently
+        function selectEvent(filename, element) {
+            selectedItem = filename;
+            document.querySelectorAll('.event-item').forEach(item => 
+                item.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            // Load and display JSON content and update the reviewed button state
+            fetch(`/media/${filename}`)
+                .then(response => response.json())
+                .then(json => {
+                    displayJson(json);
+                    // Update reviewed button state
+                    const btn = document.getElementById('toggle-reviewed-button');
+                    const mobileBtn = document.getElementById('mobile-toggle-reviewed-button');
+                    if (json.reviewed) {
+                        btn.classList.add('reviewed');
+                        mobileBtn.classList.add('reviewed');
+                        btn.innerHTML = "Reviewed ✓";
+                        mobileBtn.innerHTML = "Reviewed ✓";
+                    } else {
+                        btn.classList.remove('reviewed');
+                        mobileBtn.classList.remove('reviewed');
+                        btn.innerHTML = "Reviewed";
+                        mobileBtn.innerHTML = "Reviewed";
+                    }
+                    
+                    // Update tag button state (both desktop and mobile)
+                    const tagButtons = document.querySelectorAll('.tag-button');
+                    tagButtons.forEach(button => {
+                        button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
+                    });
+                });
+
+            // On desktop, always load video
+            if (window.innerWidth >= 768) {
+                loadVideoPlayer(filename);
+            }
+            // On mobile, do nothing here - video will be loaded on double tap
+        }
+
+        // New function to load video player
+        function loadVideoPlayer(filename) {
+            const baseFilename = filename.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
+            
+            if (window.innerWidth < 768) {
+                // Mobile: load video into modal popup
+                const modal = document.getElementById('mobileVideoModal');
+                modal.classList.add('active');
+                const mobileVideoPlayer = videojs('mobileVideoPlayer');
+                mobileVideoPlayer.pause();
+                mobileVideoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                mobileVideoPlayer.load();
+                
+                // Setup handlers for fullscreen behavior
+                mobileVideoPlayer.on('play', function() {
+                    if (!mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.requestFullscreen();
+                    }
+                });
+                
+                mobileVideoPlayer.on('pause', function() {
+                    if (mobileVideoPlayer.isFullscreen()) {
+                        mobileVideoPlayer.exitFullscreen();
+                    }
+                });
+
+                mobileVideoPlayer.on('canplay', function() {
+                    mobileVideoPlayer.play();
+                });
+                
+                mobileVideoPlayer.on('error', function(e) {
+                    console.error('Mobile video error:', mobileVideoPlayer.error());
+                });
+            } else {
+                // Desktop: use existing video player
+                const videoPlayer = videojs('videoPlayer');
+                videoPlayer.pause();
+                videoPlayer.src({
+                    src: videoFilename,
+                    type: 'video/mp4'
+                });
+                videoPlayer.load();
+                videoPlayer.on('canplay', function() {
+                    videoPlayer.play();
+                });
+                videoPlayer.on('error', function(e) {
+                    console.error('Video error:', videoPlayer.error());
+                });
+            }
+        }
+
+        // Modified to handle double tap on list items
+        function handleListItemClick(file, item, e) {
+            e.stopPropagation();
+            
+            // On desktop, just select normally
+            if (window.innerWidth >= 768) {
+                selectEvent(file, item);
+                return;
+            }
+
+            // On mobile, implement double-tap detection
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+            
+            // Check if it's a double tap (same item within delay)
+            if (tapLength < doubleTapDelay && lastTapItem === file) {
+                // Double tap - load the video
+                loadVideoPlayer(file);
+                lastTapTime = 0; // Reset tap tracking
+            } else {
+                // Single tap - just select the item and show JSON
+                selectEvent(file, item);
+                // Track this tap for potential double tap
+                lastTapTime = currentTime;
+                lastTapItem = file;
+            }
+        }
+
+        function showCurrentImage() {
+            if (currentImages.length > 0) {
+                const img = document.getElementById('currentImage');
+                img.src = `/media/${currentImages[currentIndex]}`;
+                document.getElementById('timeIndicator').textContent = 
+                    `Image ${currentIndex + 1} of ${currentImages.length}`;
+            }
+        }
+
+        function updateSingleListItem(filename, json) {
+            const item = document.querySelector(`[data-filename="${filename}"]`);
+            if (!item) return;
+
+            // Remove existing classes
+            item.classList.remove('helen-out', 'helen-back', 'reviewed');
+            
+            // First set reviewed class if the item is reviewed
+            if (json.reviewed) {
+                item.classList.add('reviewed');
+            }
+            
+            // Then add helen-specific classes if present
+            if (json.label === 'HELEN_OUT') {
+                item.classList.add('helen-out');
+            } else if (json.label === 'HELEN_BACK') {
+                item.classList.add('helen-back');
+            }
+            
+            // Update star icon based on tagged property
+            const existingStar = item.querySelector('.star-icon');
+            if (json.tagged) {
+                if (!existingStar) {
+                    const starSpan = document.createElement('span');
+                    starSpan.className = 'star-icon';
+                    starSpan.textContent = '⭐';
+                    item.appendChild(starSpan);
+                }
+            } else {
+                if (existingStar) {
+                    existingStar.remove();
+                }
+            }
+        }
+
+        function updateDirection(newDirection) {
+            if (!selectedItem || !currentJson) return;
+
+            // Set named_direction to basic direction
+            if (newDirection.startsWith('HELEN')) {
+                currentJson.named_direction = newDirection.split(' ')[1]; // Gets 'OUT' or 'BACK'
+                currentJson.label = newDirection.replace(' ', '_'); // Sets 'HELEN_OUT' or 'HELEN_BACK'
+            } else {
+                currentJson.named_direction = newDirection; // 'OUT', 'BACK', or 'OTHER'
+                currentJson.label = null;
+            }
+            
+            // Mark as reviewed when direction is updated
+            currentJson.reviewed = true;
+
+            // Update display and list item
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+
+            // Update the Reviewed button state accordingly
+            const btn = document.getElementById('toggle-reviewed-button');
+            if (currentJson.reviewed) {
+                btn.classList.add('reviewed');
+                btn.innerHTML = "Reviewed ✓";
+            } else {
+                btn.classList.remove('reviewed');
+                btn.innerHTML = "Reviewed";
+            }
+
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('JSON updated successfully');
+                closeMobileModal(); // Close the modal after successful update
+            })
+            .catch(error => console.error('Error updating JSON:', error));
+        }
+
+        function deleteCurrentEntry() {
+            if (!selectedItem) return;
+
+            const baseFilename = selectedItem.replace('.json', '');
+            fetch(`/api/delete/${baseFilename}?date=${currentDirectory}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to delete');
+                console.log('Files deleted successfully');
+                
+                // Remove the item from the list
+                const itemToRemove = document.querySelector(`[data-filename="${selectedItem}"]`);
+                if (itemToRemove) {
+                    itemToRemove.remove();
+                }
+
+                clearSelection();
+                closeMobileModal(); // Close the modal after successful deletion
+            })
+            .catch(error => console.error('Error deleting files:', error));
+        }
+
+        function toggleReviewed() {
+            if (!selectedItem || !currentJson) return;
+            currentJson.reviewed = !currentJson.reviewed;
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update both desktop and mobile button states
+            const desktopBtn = document.getElementById('toggle-reviewed-button');
+            const mobileBtn = document.getElementById('mobile-toggle-reviewed-button');
+            if (currentJson.reviewed) {
+                desktopBtn.classList.add('reviewed');
+                mobileBtn.classList.add('reviewed');
+                desktopBtn.innerHTML = "Reviewed ✓";
+                mobileBtn.innerHTML = "Reviewed ✓";
+            } else {
+                desktopBtn.classList.remove('reviewed');
+                mobileBtn.classList.remove('reviewed');
+                desktopBtn.innerHTML = "Reviewed";
+                mobileBtn.innerHTML = "Reviewed";
+            }
+            
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Reviewed flag toggled successfully');
+                closeMobileModal(); // Close the modal after successful toggle
+            })
+            .catch(error => console.error('Error updating reviewed flag:', error));
+        }
+
+        // Add the toggleTagged function
+        function toggleTagged() {
+            if (!selectedItem || !currentJson) return;
+            
+            // Toggle the tagged property
+            currentJson.tagged = !currentJson.tagged;
+            
+            // Update display
+            displayJson(currentJson);
+            updateSingleListItem(selectedItem, currentJson);
+            
+            // Update tag button state (both desktop and mobile)
+            const tagButtons = document.querySelectorAll('.tag-button');
+            tagButtons.forEach(button => {
+                button.innerHTML = `Tag${currentJson.tagged ? ' ✓' : ''}`;
+            });
+            
+            // Send updated JSON to server
+            fetch(`/api/update/${selectedItem}?date=${currentDirectory}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentJson)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update');
+                console.log('Tagged flag toggled successfully');
+                // Don't close mobile modal on tag toggle
+            })
+            .catch(error => console.error('Error updating tagged flag:', error));
+        }
+
+        // Add logout functionality
+        function handleLogout() {
+            // Clear local storage
+            localStorage.clear();
+            // Redirect to login page
+            window.location.href = '/login';
+        }
+
+        function downloadCurrentVideo() {
+            if (!selectedItem) return;
+            
+            const baseFilename = selectedItem.replace('.json', '');
+            const videoFilename = `/media/${baseFilename}.mp4`;
+            
+            // Create a temporary anchor element
+            const a = document.createElement('a');
+            a.href = videoFilename;
+            a.download = baseFilename + '.mp4'; // Set the download filename
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Add function to navigate to the clock page
+        function navigateToClock() {
+            window.location.href = '/clock';
+        }
+
+        // Initial setup
+        async function initialize() {
+            metadataList.style.width = currentWidth + 'px';
+            selectedItem = null;
+            currentJson = null;
+            // Get available dates from server
+            const response = await fetch('/api/dates');
+            availableDates = await response.json();
+            // Always set currentDirectory using availableDates or today's date
+            if (availableDates.length > 0) {
+                currentDirectory = availableDates[0];
+            } else {
+                currentDirectory = getCurrentDateDir();
+            }
+            updateDateDisplay();
+            updateMetadataList();
+            setupAutoRefresh();
+        }
+        initialize();
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+
+{
+    "detection_threshold": 0.1,
+    "max_boxes":200,
+    "labels": [
+      "unlabeled",
+      "car",
+      "dog",
+      "helen_back",
+      "helen_out",
+      "person"
+    ]
+}

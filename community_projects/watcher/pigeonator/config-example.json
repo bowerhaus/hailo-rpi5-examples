@@ -1,0 +1,23 @@
+{
+    "CLASS_TO_TRACK": "pigeon",
+    "CLASS_DETECTED_COUNT": 4,
+    "CLASS_GONE_SECONDS": 5,
+    "CLASS_MATCH_CONFIDENCE": 0.8,
+    "SAVE_DETECTION_IMAGES": true,
+    "SAVE_DETECTION_VIDEO": true,
+    "SHOW_DETECTION_BOXES": false,
+    "FRAME_RATE": 30,
+    "DAYTIME_ONLY": true,
+
+    "LINKTAP_USERNAME": "your_linktap_username",
+    "LINKTAP_APIKEY": "your_linktap_apikey",
+    "LINKTAP_GATEWAYID": "your_gateway_id",
+    "LINKTAP_TAPLINKERID": "your_taplinker_id",
+    
+    "WATERING_ON": true,
+    "WATERING_DURATION_SEC": 20,
+    "DETER_DELAY_SECONDS": 7,
+    "DETER_RATE_LIMIT_SECONDS": 120,
+
+    "USE_SSL": false
+}
