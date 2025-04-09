@@ -20,7 +20,20 @@ OUTPUT_DIRECTORY = 'output'
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, 'r') as f:
-            return json.load(f)
+            users_data = json.load(f)
+            # Convert legacy format to new format if needed
+            converted_users = {}
+            for username, value in users_data.items():
+                if isinstance(value, str):
+                    # Legacy format with just password hash
+                    converted_users[username] = {
+                        'password': value,
+                        'is_admin': True  # Default existing users to admin
+                    }
+                else:
+                    # Already in new format
+                    converted_users[username] = value
+            return converted_users
     return {}
 
 def save_users(users):
@@ -35,6 +48,21 @@ def get_date_param():
     if not date or date == 'undefined':
         date = datetime.datetime.now().strftime("%Y%m%d")
     return date
+
+def get_user_from_token():
+    """Extract user information from token"""
+    token = request.cookies.get('token')
+    if not token:
+        return None
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return {
+            'username': payload.get('username'),
+            'is_admin': payload.get('is_admin', False)
+        }
+    except:
+        return None
 
 def token_required(f):
     def wrap(*args, **kwargs):
@@ -58,7 +86,10 @@ def verify_admin_token():
     token = auth_header.split(' ')[1]
     try:
         # Decode and verify the token
-        jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        # Check if the user is an admin
+        if not payload.get('is_admin', False):
+            return False, "Administrator privileges required"
         return True, ""
     except jwt.ExpiredSignatureError:
         return False, "Authorization token has expired"
@@ -72,14 +103,32 @@ def handle_login():
     password = data.get('password')
     
     users = load_users()
+    
+    # Check if the user exists
+    if username not in users:
+        return jsonify({'error': 'Invalid credentials'}), 401
+        
+    user_data = users[username]
+    
+    # Handle both legacy format and new format
+    if isinstance(user_data, str):
+        # Legacy format - just password hash
+        password_hash = user_data
+        is_admin = True  # Default to admin for legacy users
+    else:
+        # New format - dictionary with password and admin status
+        password_hash = user_data['password']
+        is_admin = user_data.get('is_admin', False)
+    
     # Compare stored hash with hash of provided password
-    if username in users and users[username] == hash_password(password):
+    if password_hash == hash_password(password):
         # Set token to expire after 12 hours (changed from 60 minutes)
         token = jwt.encode({
             'username': username,
+            'is_admin': is_admin,
             'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=12)
         }, SECRET_KEY, algorithm='HS256')
-        response = jsonify({'token': token})
+        response = jsonify({'token': token, 'is_admin': is_admin})
         response.set_cookie('token', token)
         return response
     else:
@@ -95,6 +144,7 @@ def handle_register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    is_admin = data.get('is_admin', False)
     
     # Validate input
     if not username or not password:
@@ -112,10 +162,25 @@ def handle_register():
     if username in users:
         return jsonify({'error': 'User already exists'}), 400
     
-    # Store the hashed password instead of plain text
-    users[username] = hash_password(password)
+    # Store the user data with password hash and admin status
+    users[username] = {
+        'password': hash_password(password),
+        'is_admin': bool(is_admin)
+    }
     save_users(users)
     return jsonify({'success': True})
+
+def handle_user_status():
+    """Get the current user's status including admin privileges"""
+    user = get_user_from_token()
+    if user:
+        return jsonify({
+            'authenticated': True,
+            'username': user['username'],
+            'is_admin': user['is_admin']
+        })
+    else:
+        return jsonify({'authenticated': False}), 401
 
 def handle_login_page(static_folder):
     response = send_from_directory(static_folder, 'login.html')
@@ -225,13 +290,22 @@ def handle_metadata_request():
     """
     date = get_date_param()
     directory = os.path.join(OUTPUT_DIRECTORY, date)
+    
+    # Debug info
+    print(f"Metadata requested for date: {date}")
+    print(f"Looking in directory: {directory}")
+    
     if not os.path.exists(directory):
+        print(f"Directory not found: {directory}")
         return jsonify([])
     
     files = os.listdir(directory)
     json_files = [f for f in files if f.endswith('.json')]
+    
+    print(f"Found {len(json_files)} JSON files before filtering")
 
     since = request.args.get('since', type=str)
+    print(f"Since parameter: {since}")
 
     if since:
         filtered_files = []
@@ -253,6 +327,7 @@ def handle_metadata_request():
                 print(f"Warning: Could not parse timestamp from filename: {file}")
                 continue
         json_files = filtered_files
+        print(f"After filtering: {len(json_files)} files")
 
     json_files.sort(reverse=True)
     return jsonify(json_files)

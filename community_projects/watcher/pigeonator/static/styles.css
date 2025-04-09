@@ -508,6 +508,18 @@ body {
     display: none; /* Hide in desktop view */
 }
 
+/* Add disabled button styles */
+.pigeon-button.disabled,
+.delete-button.disabled,
+.review-button.disabled,
+.tag-button.disabled,
+.download-button.disabled {
+    background-color: #999 !important; /* Override specific button colors */
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
 /* Mobile styles */
 @media (max-width: 768px) {
     /* Core layout containers */
@@ -964,6 +976,18 @@ body {
     /* Override any conflicting styles that might be preventing height changes */
     .event-item * {
         line-height: inherit !important;
+    }
+
+    /* Ensure mobile styling applies to disabled buttons too */
+    .mobile-video-modal .pigeon-button.disabled,
+    .mobile-video-modal .delete-button.disabled,
+    .mobile-video-modal .review-button.disabled,
+    .mobile-video-modal .tag-button.disabled,
+    .mobile-video-modal .download-button.disabled {
+        background-color: #999 !important;
+        opacity: 0.5;
+        cursor: not-allowed !important;
+        pointer-events: none;
     }
 }
 

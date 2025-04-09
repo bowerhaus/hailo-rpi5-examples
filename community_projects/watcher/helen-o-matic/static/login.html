@@ -66,6 +66,18 @@
             color: white;
             margin-bottom: 15px;
         }
+        /* Checkbox style */
+        .admin-checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: white;
+            justify-content: center;
+        }
+        .admin-checkbox-container input {
+            width: auto;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -104,6 +116,10 @@
             <h3 class="modal-title">Create New User</h3>
             <input type="text" id="newUsername" placeholder="New Username">
             <input type="password" id="newPassword" placeholder="New Password">
+            <div class="admin-checkbox-container">
+                <input type="checkbox" id="isAdmin">
+                <label for="isAdmin">Admin User</label>
+            </div>
             <div style="margin-top: 15px;">
                 <button onclick="registerNewUser()">Create User</button>
             </div>
@@ -131,6 +147,7 @@
             .then(data => {
                 if (data.token) {
                     localStorage.setItem('token', data.token);
+                    localStorage.setItem('isAdmin', data.is_admin || false);
                     window.location.href = '/';
                 } else {
                     errorDiv.textContent = data.error;
@@ -153,6 +170,7 @@
             document.getElementById('adminPassword').value = '';
             document.getElementById('newUsername').value = '';
             document.getElementById('newPassword').value = '';
+            document.getElementById('isAdmin').checked = false;
             document.getElementById('adminError').textContent = '';
             document.getElementById('registerError').textContent = '';
             // Reset the admin token
@@ -195,6 +213,7 @@
 
             const newUsername = document.getElementById('newUsername').value;
             const newPassword = document.getElementById('newPassword').value;
+            const isAdmin = document.getElementById('isAdmin').checked;
             const errorDiv = document.getElementById('registerError');
 
             fetch('/api/register', {
@@ -203,7 +222,11 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${adminAuthToken}`
                 },
-                body: JSON.stringify({ username: newUsername, password: newPassword })
+                body: JSON.stringify({ 
+                    username: newUsername, 
+                    password: newPassword,
+                    is_admin: isAdmin
+                })
             })
             .then(response => response.json())
             .then(data => {

@@ -103,6 +103,57 @@
         // Add current date handling
         let currentDirectory = '';
         let availableDates = [];
+        let isAdmin = false; // Add user admin status variable
+        
+        // Check user admin status on page load
+        function checkAdminStatus() {
+            // First try to get status from localStorage (set during login)
+            const storedIsAdmin = localStorage.getItem('isAdmin');
+            if (storedIsAdmin === 'true') {
+                isAdmin = true;
+                updateButtonState();
+                return;
+            }
+            
+            // Otherwise fetch from the server
+            fetch('/api/user')
+                .then(response => response.json())
+                .then(data => {
+                    isAdmin = data.is_admin || false;
+                    localStorage.setItem('isAdmin', isAdmin);
+                    console.log('Admin status updated:', isAdmin);
+                    updateButtonState();
+                })
+                .catch(error => {
+                    console.error('Error checking user status:', error);
+                });
+        }
+        
+        // Function to update button states based on admin status
+        function updateButtonState() {
+            const buttons = document.querySelectorAll('.pigeon-button, .review-button, .delete-button, .tag-button, .download-button');
+            buttons.forEach(button => {
+                if (!isAdmin) {
+                    button.classList.add('disabled');
+                    button.setAttribute('disabled', 'disabled');
+                } else {
+                    button.classList.remove('disabled');
+                    button.removeAttribute('disabled');
+                }
+            });
+            
+            // Also update mobile buttons if they exist
+            const mobileButtons = document.querySelectorAll('#mobileVideoModal .pigeon-button, #mobileVideoModal .review-button, #mobileVideoModal .delete-button, #mobileVideoModal .tag-button, #mobileVideoModal .download-button');
+            mobileButtons.forEach(button => {
+                if (!isAdmin) {
+                    button.classList.add('disabled');
+                    button.setAttribute('disabled', 'disabled');
+                } else {
+                    button.classList.remove('disabled');
+                    button.removeAttribute('disabled');
+                }
+            });
+        }
 
         function getCurrentDateDir() {
             const now = new Date();
@@ -290,6 +341,9 @@
                     tagButtons.forEach(button => {
                         button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
                     });
+                    
+                    // Update button states based on admin status
+                    updateButtonState();
                 });
             
             // On desktop, always load video
@@ -777,6 +831,9 @@
             
             selectedItem = null;
             currentJson = null;
+            
+            // Check admin status
+            checkAdminStatus();
             
             // Get available dates from server
             const response = await fetch('/api/dates');

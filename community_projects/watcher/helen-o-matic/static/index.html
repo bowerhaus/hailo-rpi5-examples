@@ -182,6 +182,55 @@
         // Add current date handling
         let currentDirectory = '';
         let availableDates = [];
+        let isAdmin = false; // Add user admin status variable
+        
+        // Check user admin status on page load
+        function checkAdminStatus() {
+            // First try to get status from localStorage (set during login)
+            const storedIsAdmin = localStorage.getItem('isAdmin');
+            if (storedIsAdmin === 'true') {
+                isAdmin = true;
+                return;
+            }
+            
+            // Otherwise fetch from the server
+            fetch('/api/user')
+                .then(response => response.json())
+                .then(data => {
+                    isAdmin = data.is_admin || false;
+                    localStorage.setItem('isAdmin', isAdmin);
+                    updateButtonState();
+                })
+                .catch(error => {
+                    console.error('Error checking user status:', error);
+                });
+        }
+        
+        // Function to update button states based on admin status
+        function updateButtonState() {
+            const buttons = document.querySelectorAll('.direction-button, .toggle-reviewed-button, .delete-button, .tag-button, .download-button');
+            buttons.forEach(button => {
+                if (!isAdmin) {
+                    button.classList.add('disabled');
+                    button.setAttribute('disabled', 'disabled');
+                } else {
+                    button.classList.remove('disabled');
+                    button.removeAttribute('disabled');
+                }
+            });
+            
+            // Also update mobile buttons if they exist
+            const mobileButtons = document.querySelectorAll('#mobileVideoModal .direction-button, #mobileVideoModal .toggle-reviewed-button, #mobileVideoModal .delete-button, #mobileVideoModal .tag-button, #mobileVideoModal .download-button');
+            mobileButtons.forEach(button => {
+                if (!isAdmin) {
+                    button.classList.add('disabled');
+                    button.setAttribute('disabled', 'disabled');
+                } else {
+                    button.classList.remove('disabled');
+                    button.removeAttribute('disabled');
+                }
+            });
+        }
 
         function getCurrentDateDir() {
             const now = new Date();
@@ -432,11 +481,16 @@
                 newItems.forEach(item => {
                     list.insertBefore(item, firstChild);
                 });
+                
+                // Add console debug logs
+                console.log('Added', newItems.length, 'items to list');
+                console.log('Current list children count:', list.children.length);
 
                 // Update the last refresh timestamp
                 if (files.length > 0) {
                     const lastFile = files[0];
                     lastMetadataTime = lastFile.split('_')[1]; // Extract HHMMSS from filename
+                    console.log('Updated lastMetadataTime to', lastMetadataTime);
                 }
 
             } catch (error) {
@@ -503,7 +557,7 @@
             mobileVideoPlayer.reset();
         }
 
-        // Modified selectEvent function to handle mobile differently
+        // Modified selectEvent function to check admin status
         function selectEvent(filename, element) {
             selectedItem = filename;
             document.querySelectorAll('.event-item').forEach(item => 
@@ -535,6 +589,9 @@
                     tagButtons.forEach(button => {
                         button.innerHTML = `Tag${json.tagged ? ' ✓' : ''}`;
                     });
+                    
+                    // Update button states based on admin status
+                    updateButtonState();
                 });
 
             // On desktop, always load video
@@ -838,6 +895,10 @@
             metadataList.style.width = currentWidth + 'px';
             selectedItem = null;
             currentJson = null;
+            
+            // Check admin status
+            checkAdminStatus();
+            
             // Get available dates from server
             const response = await fetch('/api/dates');
             availableDates = await response.json();

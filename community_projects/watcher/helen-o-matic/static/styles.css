@@ -500,6 +500,27 @@ body {
     box-sizing: border-box;
 }
 
+/* Add disabled button styles */
+.direction-button.disabled,
+.delete-button.disabled,
+.toggle-reviewed-button.disabled,
+.tag-button.disabled,
+.download-button.disabled {
+    background-color: #999 !important; /* Override specific button colors */
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Special case for helen-specific direction buttons */
+.direction-button.helen-out.disabled {
+    background-color: rgba(220, 53, 69, 0.5) !important;
+}
+
+.direction-button.helen-back.disabled {
+    background-color: rgba(40, 167, 69, 0.5) !important;
+}
+
 /* Add mobile date navigation styles */
 .mobile-date-nav {
     background: #333;
@@ -917,5 +938,24 @@ body {
         padding-right: 10px !important;
         width: 100% !important;
         box-sizing: border-box !important;
+    }
+
+    .mobile-video-modal .direction-button.disabled,
+    .mobile-video-modal .delete-button.disabled,
+    .mobile-video-modal .toggle-reviewed-button.disabled,
+    .mobile-video-modal .tag-button.disabled,
+    .mobile-video-modal .download-button.disabled {
+        background-color: #999 !important;
+        opacity: 0.5;
+        cursor: not-allowed !important;
+        pointer-events: none;
+    }
+    
+    .mobile-video-modal .direction-button.helen-out.disabled {
+        background-color: rgba(220, 53, 69, 0.5) !important;
+    }
+    
+    .mobile-video-modal .direction-button.helen-back.disabled {
+        background-color: rgba(40, 167, 69, 0.5) !important;
     }
 }
