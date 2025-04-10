@@ -1,122 +1,79 @@
 from flask import Flask, send_from_directory, jsonify, request
 import os
-import datetime
+import sys
+import logging
 import re
-import json
-import subprocess  # Import the subprocess module
-import tempfile  # Import the tempfile module
+
+# Add watcher directory to Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from web_server_common import (token_required, handle_login, handle_register, handle_login_page,
+                   handle_list_dates, handle_media, handle_delete_files, handle_update_json,
+                   handle_cpu_temperature, get_date_param, OUTPUT_DIRECTORY, handle_metadata_request,
+                   handle_logout, SECRET_KEY, handle_user_status)
+
+# Configure logging to only show errors
+# logging.getLogger('werkzeug').setLevel(logging.ERROR)
+# logging.getLogger('flask').setLevel(logging.ERROR)
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
-OUTPUT_DIRECTORY = 'output'
-
-@app.route('/api/files')
-def list_files():
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
-    if not os.path.exists(directory):
-        return jsonify([])
-
-    files = os.listdir(directory)
-    image_files = [f for f in files if f.endswith('.jpg')]
-    # Sort files by timestamp (newest first)
-    image_files.sort(reverse=True)
-    return jsonify(image_files)
 
 @app.route('/api/metadata')
-def list_metadata():
-    date = request.args.get('date', datetime.datetime.now().strftime("%Y%m%d"))
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    
-    if not os.path.exists(directory):
-        return jsonify([])
-
-    files = os.listdir(directory)
-    json_files = [f for f in files if f.endswith('.json')]
-    json_files.sort(reverse=True)  # Newest first
-    return jsonify(json_files)
-
-@app.route('/api/images/<root_filename>')
-def list_sequence_images(root_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
-    # Remove the _xN_M suffix from filename to get base name
-    base_name = re.sub(r'_x\d+_\d+$', '', root_filename)
-    
-    # Find all sequence images matching the base name
-    all_files = os.listdir(directory)
-    sequence_images = [f for f in all_files if f.startswith(base_name) and '[' in f and f.endswith('.jpg')]
-    sequence_images.sort()  # Sort by sequence number
-    
-    return jsonify(sequence_images)
+@token_required
+def get_metadata():
+    return handle_metadata_request()
 
 @app.route('/api/update/<filename>', methods=['POST'])
+@token_required
 def update_json(filename):
-    if not filename.endswith('.json'):
-        return jsonify({'error': 'Invalid file type'}), 400
-        
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    filepath = os.path.join(directory, filename)
-    
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-        
-    try:
-        json_data = request.get_json()
-        with open(filepath, 'w') as f:
-            json.dump(json_data, f, indent=2)
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return handle_update_json(filename)
 
 @app.route('/api/delete/<base_filename>', methods=['DELETE'])
+@token_required
 def delete_files(base_filename):
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    directory = os.path.join(OUTPUT_DIRECTORY, today)
-    
-    if not os.path.exists(directory):
-        return jsonify({'error': 'Directory not found'}), 404
-
-    # Find and delete all files with the same base filename
-    files_to_delete = [f for f in os.listdir(directory) if f.startswith(base_filename)]
-    for file in files_to_delete:
-        os.remove(os.path.join(directory, file))
-    
-    return jsonify({'success': True, 'deleted_files': files_to_delete})
+    return handle_delete_files(base_filename)
 
 @app.route('/media/<filename>')
+@token_required
 def serve_media(filename):
-    # Extract the date from the start of the filename
-    match = re.match(r'^(\d{8})_', filename)
-    if not match:
-        return jsonify({'error': 'Invalid filename format'}), 400
-
-    date = match.group(1)
-    directory = os.path.join(OUTPUT_DIRECTORY, date)
-    filepath = os.path.join(directory, filename)
-
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
-
-    if filename.endswith('.jpg') or filename.endswith('.json') or filename.endswith('.mp4'):
-        return send_from_directory(directory, filename)
-    
-    return '', 404
+    return handle_media(filename)
 
 @app.route('/api/dates')
+@token_required
 def list_dates():
-    if not os.path.exists(OUTPUT_DIRECTORY):
-        return jsonify([])
+    return handle_list_dates()
 
-    dates = [d for d in os.listdir(OUTPUT_DIRECTORY) if os.path.isdir(os.path.join(OUTPUT_DIRECTORY, d))]
-    dates.sort(reverse=True)  # Newest first
-    return jsonify(dates)
+@app.route('/api/cpu_temperature')
+@token_required
+def get_cpu_temperature():
+    return handle_cpu_temperature()
+    
+@app.route('/api/login', methods=['POST'])
+def login():
+    return handle_login()
+
+@app.route('/logout')
+def logout():
+    return handle_logout()
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    return handle_register()
+
+@app.route('/api/user')
+@token_required
+def user_status():
+    return handle_user_status()
+
+@app.route('/login')
+def login_page():
+    return handle_login_page(app.static_folder)
+
+# Removed debug route
 
 @app.route('/')
+@token_required
 def index():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001, ssl_context=('certificate/peetronic.pem', 'certificate/peetronic-privkey.pem'))
