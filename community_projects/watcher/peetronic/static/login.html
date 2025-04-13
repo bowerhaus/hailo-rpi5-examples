@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #444;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        .modal-title {
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .close-button {
+            color: white;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        /* Make modal inputs and buttons match login box */
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .modal-content button:hover {
+            background-color: #0056b3;
+        }
+        .modal-content p {
+            color: white;
+            margin-bottom: 15px;
+        }
+        /* Checkbox style */
+        .admin-checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: white;
+            justify-content: center;
+        }
+        .admin-checkbox-container input {
+            width: auto;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <div class="button-group">
+                <button onclick="login()">Login</button>
+                <button class="register-button" onclick="showRegisterModal()">Register</button>
+            </div>
+            <div class="error" id="error"></div>
+        </div>
+    </div>
+
+    <!-- Admin Authentication Modal -->
+    <div id="adminAuthModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 class="modal-title">Admin Authentication</h3>
+            <p>Please authenticate as an existing user to register a new account:</p>
+            <input type="text" id="adminUsername" placeholder="Admin Username">
+            <input type="password" id="adminPassword" placeholder="Admin Password">
+            <div style="margin-top: 15px;">
+                <button onclick="authenticateAdmin()">Authenticate</button>
+            </div>
+            <div class="error" id="adminError" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- New User Registration Modal -->
+    <div id="newUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 class="modal-title">Create New User</h3>
+            <input type="text" id="newUsername" placeholder="New Username">
+            <input type="password" id="newPassword" placeholder="New Password">
+            <div class="admin-checkbox-container">
+                <input type="checkbox" id="isAdmin">
+                <label for="isAdmin">Admin User</label>
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="registerNewUser()">Create User</button>
+            </div>
+            <div class="error" id="registerError" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Authentication token for the admin that will be used to authorize the registration
+        let adminAuthToken = null;
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error');
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('isAdmin', data.is_admin || false);
+                    window.location.href = '/';
+                } else {
+                    errorDiv.textContent = data.error;
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+            });
+        }
+
+        function showRegisterModal() {
+            document.getElementById('adminAuthModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('adminAuthModal').style.display = 'none';
+            document.getElementById('newUserModal').style.display = 'none';
+            // Clear all input fields and errors
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('isAdmin').checked = false;
+            document.getElementById('adminError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+            // Reset the admin token
+            adminAuthToken = null;
+        }
+
+        function authenticateAdmin() {
+            const adminUsername = document.getElementById('adminUsername').value;
+            const adminPassword = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('adminError');
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: adminUsername, password: adminPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    // Admin authentication successful
+                    adminAuthToken = data.token;
+                    document.getElementById('adminAuthModal').style.display = 'none';
+                    document.getElementById('newUserModal').style.display = 'flex';
+                } else {
+                    errorDiv.textContent = 'Admin authentication failed.';
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'An error occurred during authentication.';
+            });
+        }
+
+        function registerNewUser() {
+            if (!adminAuthToken) {
+                document.getElementById('registerError').textContent = 'Admin authentication required.';
+                return;
+            }
+
+            const newUsername = document.getElementById('newUsername').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const isAdmin = document.getElementById('isAdmin').checked;
+            const errorDiv = document.getElementById('registerError');
+
+            fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminAuthToken}`
+                },
+                body: JSON.stringify({ 
+                    username: newUsername, 
+                    password: newPassword,
+                    is_admin: isAdmin
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal();
+                    document.getElementById('error').textContent = 'Registration successful. Please login with the new account.';
+                } else {
+                    errorDiv.textContent = data.error;
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'An error occurred during registration.';
+            });
+        }
+    </script>
+</body>
+</html>

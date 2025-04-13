@@ -1,3 +1,10 @@
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from gstreamer_watcher_app import GStreamerWatcherApp, SOURCE_PIPELINE, DISPLAY_PIPELINE
+from logger_config import logger
+
 from hailo_apps_infra.detection_pipeline import GStreamerDetectionApp
 from hailo_apps_infra.gstreamer_helper_pipelines import (
     INFERENCE_PIPELINE,
@@ -15,11 +22,9 @@ from hailo_apps_infra.hailo_rpi_common import (
 from screeninfo import get_monitors
 import datetime
 import time
-from astral import LocationInfo
-from astral.sun import sun
-import threading
 from gi.repository import Gst
 import os
+from logger_config import logger  # Import the logger
 
 
 def NEW_SOURCE_PIPELINE(video_source, video_width=640, video_height=640, video_format='RGB', name='source', no_webcam_compression=False):
@@ -126,134 +131,21 @@ def NEW_DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false'
 
     return display_pipeline
 
-def get_active_period(date):
-    # Adjust location as needed; default uses London coordinates.
-    loc = LocationInfo("London", "England", "Europe/London", 51.5, -0.116)
-    s = sun(loc.observer, date=date)
-    active_start = s['sunrise'] - datetime.timedelta(minutes=30)
-    active_end = s['sunset'] + datetime.timedelta(minutes=30)
-    return active_start.replace(tzinfo=None), active_end.replace(tzinfo=None)
-
-class GStreamerPeetronicApp(GStreamerDetectionApp):
+class GStreamerPeetronicApp(GStreamerWatcherApp):
+    """
+    GStreamer app for Peetronic.
+    Inherits from GStreamerWatcherApp.
+    """
+    
     def __init__(self, app_callback, user_data):
-        parser = get_default_parser()
-        parser.add_argument(
-            "--labels-json",
-            default=None,
-            help="Path to costume labels JSON file",
-        )
-        args = parser.parse_args()
-        # Call the parent class constructor
-        super().__init__(args, user_data)
-        # Additional initialization code can be added here
-        # Set Hailo parameters these parameters should be set based on the model used
-        self.batch_size = 2
-        nms_score_threshold = 0.3
-        nms_iou_threshold = 0.45
-
-        #self.video_width =512
-        #self.video_height =512
-
-        # Determine the architecture if not specified
-        if args.arch is None:
-            detected_arch = detect_hailo_arch()
-            if detected_arch is None:
-                raise ValueError("Could not auto-detect Hailo architecture. Please specify --arch manually.")
-            self.arch = detected_arch
-            print(f"Auto-detected Hailo architecture: {self.arch}")
-        else:
-            self.arch = args.arch
-
-
-        if args.hef_path is not None:
-            self.hef_path = args.hef_path
-        # Set the HEF file path based on the arch
-        elif self.arch == "hailo8":
-            self.hef_path = os.path.join(self.current_path, '../resources/yolov8m.hef')
-        else:  # hailo8l
-            self.hef_path = os.path.join(self.current_path, '../resources/yolov8s_h8l.hef')
-
-        # Set the post-processing shared object file
-        self.post_process_so = os.path.join(self.current_path, '../resources/libyolo_hailortpp_postprocess.so')
-        self.post_function_name = "filter_letterbox"
-        # User-defined label JSON file
-        self.labels_json = args.labels_json
-
-        self.app_callback = app_callback
-
-        self.thresholds_str = (
-            f"nms-score-threshold={nms_score_threshold} "
-            f"nms-iou-threshold={nms_iou_threshold} "
-            f"output-format-type=HAILO_FORMAT_TYPE_FLOAT32"
-        )
-
-        # Set the process title
-        #setproctitle.setproctitle("Hailo Detection App")
-
-        self.create_pipeline()
-
-    def get_pipeline_string(self):
-        source_pipeline = NEW_SOURCE_PIPELINE(self.video_source, self.video_width, self.video_height)
-        detection_pipeline = INFERENCE_PIPELINE(
-            hef_path=self.hef_path,
-            post_process_so=self.post_process_so,
-            post_function_name=self.post_function_name,
-            batch_size=self.batch_size,
-            config_json=self.labels_json,
-            additional_params=self.thresholds_str)
-        detection_pipeline_wrapper = INFERENCE_PIPELINE_WRAPPER(detection_pipeline)
-        tracker_pipeline = TRACKER_PIPELINE(class_id=-1)
-        user_callback_pipeline = USER_CALLBACK_PIPELINE()
-        display_pipeline = NEW_DISPLAY_PIPELINE(video_sink="xvimagesink", sync=self.sync, show_fps=self.show_fps)
-
-        pipeline_string = (
-            f'{source_pipeline} ! '
-            f'{detection_pipeline_wrapper} ! '
-
-            f'{user_callback_pipeline} !'
-            f'{display_pipeline}'
-        )
-        print(pipeline_string)
-        return pipeline_string
-
-    def monitor_active_period(self):
-        """Thread method to monitor active period and pause/play the pipeline accordingly."""
-        check_interval = 60  # seconds
-        while True:
-            # Only perform active period check if DAYTIME_ONLY is True
-            if not getattr(self.user_data, "daytime_only", False):
-                time.sleep(check_interval)
-                continue
-
-            now = datetime.datetime.now()
-            active_start, active_end = get_active_period(now.date())
-            if now < active_start or now > active_end:
-                # Outside active period; pause the pipeline if not already paused.
-                current_state = self.pipeline.get_state(0).state
-                if current_state != Gst.State.PAUSED:
-                    print("Outside active period. Pausing pipeline.")
-                    self.pipeline.set_state(Gst.State.PAUSED)
-            else:
-                # Within active period; play the pipeline if not already playing.
-                current_state = self.pipeline.get_state(0).state
-                if current_state != Gst.State.PLAYING:
-                    print("Within active period. Setting pipeline to PLAYING.")
-                    self.pipeline.set_state(Gst.State.PLAYING)
-            time.sleep(check_interval)
-
-    def on_eos(self):
-        self.user_data.on_eos()
-        self.pipeline.set_state(Gst.State.PAUSED)
-
-    def run(self):
-
-        # Proceed with the pipeline execution.
-        self.user_data.pipeline = self.pipeline
+        """
+        Initialize the Peetronic application.
         
-        # Start the active period monitor thread.
-        monitor_thread = threading.Thread(target=self.monitor_active_period, daemon=True)
-        monitor_thread.start()
-
-        # Set pipeline to an initial state.
-        self.pipeline.set_state(Gst.State.PAUSED)
-        super(GStreamerPeetronicApp, self).run()
+        Args:
+            app_callback: Callback function to process frames.
+            user_data: User data to pass to the callback.
+        """
+        super().__init__(app_callback, user_data)
+        logger.info("Peetronic application initialized")
+        
+        # Any Peetronic-specific configuration can be added here
