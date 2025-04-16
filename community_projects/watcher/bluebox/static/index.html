@@ -57,8 +57,8 @@
                     <i class="material-icons">file_download</i>
                 </button>
                 <div class="center-buttons">
-                    <button class="dog-button yes" onclick="setDogLabel('dog')">DOG</button>
-                    <button class="dog-button no" onclick="setDogLabel(null)">NOT DOG</button>
+                    <button class="match-button yes" onclick="setMatchLabel('person')">MATCH</button>
+                    <button class="match-button no" onclick="setMatchLabel(null)">NOT MATCH</button>
                     <button class="tag-button" onclick="toggleTagged()">Tag</button>
                 </div>
                 <button class="delete-button" onclick="deleteCurrentEntry()">Delete</button>
@@ -82,8 +82,8 @@
             <div class="button-container">
                 <button id="mobile-review-button" class="review-button" onclick="toggleReviewState()">Reviewed</button>
                 <div class="mobile-center-buttons">
-                    <button class="dog-button yes" onclick="setDogLabel('dog')">DOG</button>
-                    <button class="dog-button no" onclick="setDogLabel(null)">NOT DOG</button>
+                    <button class="match-button yes" onclick="setMatchLabel('person')">MATCH</button>
+                    <button class="match-button no" onclick="setMatchLabel(null)">NOT MATCH</button>
                 </div>
                 <div class="tag-download-container">
                     <button class="tag-button" id="mobileTagButton" onclick="toggleTagged()">Tag</button>
@@ -131,7 +131,7 @@
         
         // Function to update button states based on admin status
         function updateButtonState() {
-            const buttons = document.querySelectorAll('.dog-button, .review-button, .delete-button, .tag-button, .download-button');
+            const buttons = document.querySelectorAll('.match-button, .review-button, .delete-button, .tag-button, .download-button');
             buttons.forEach(button => {
                 if (!isAdmin) {
                     button.classList.add('disabled');
@@ -143,7 +143,7 @@
             });
             
             // Also update mobile buttons if they exist
-            const mobileButtons = document.querySelectorAll('#mobileVideoModal .dog-button, #mobileVideoModal .review-button, #mobileVideoModal .delete-button, #mobileVideoModal .tag-button, #mobileVideoModal .download-button');
+            const mobileButtons = document.querySelectorAll('#mobileVideoModal .match-button, #mobileVideoModal .review-button, #mobileVideoModal .delete-button, #mobileVideoModal .tag-button, #mobileVideoModal .download-button');
             mobileButtons.forEach(button => {
                 if (!isAdmin) {
                     button.classList.add('disabled');
@@ -505,7 +505,7 @@
                                 item.className = 'event-item';
                                 
                                 // Add appropriate class based on label
-                                if (json && json.label === 'dog') {
+                                if (json && json.label === 'person') {
                                     item.classList.add('dog');
                                 } else if (json && json.reviewed === true) {
                                     item.classList.add('reviewed');
@@ -630,7 +630,7 @@
             item.classList.remove('reviewed', 'dog');
             
             // Add appropriate class based on new label
-            if (json.label === 'dog') {
+            if (json.label === 'person') {
                 item.classList.add('dog');
             } else if (json.reviewed === true) {
                 item.classList.add('reviewed');
@@ -680,7 +680,7 @@
         }
 
         // Modified to close mobile modal after update
-        function setDogLabel(label) {
+        function setMatchLabel(label) {
             if (!selectedItem || !currentJson) return;
 
             // Set the label and mark as reviewed
@@ -707,13 +707,13 @@
             })
             .then(response => {
                 if (!response.ok) throw new Error('Failed to update');
-                console.log('Dog label updated successfully');
+                console.log('Match label updated successfully');
                 // Close mobile modal after successful update
                 if (window.innerWidth < 768) {
                     closeMobileModal();
                 }
             })
-            .catch(error => console.error('Error updating dog label:', error));
+            .catch(error => console.error('Error updating match label:', error));
         }
 
         // Modified to update all tag buttons

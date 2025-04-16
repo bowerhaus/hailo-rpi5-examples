@@ -118,7 +118,7 @@ body {
     flex-grow: 1;
 }
 
-.dog-button {
+.match-button {
     padding: 8px 16px;
     border: none;
     border-radius: 4px;
@@ -129,19 +129,19 @@ body {
     min-width: 120px;
 }
 
-.dog-button.yes {
+.match-button.yes {
     background: #28a745;
 }
 
-.dog-button.yes:hover {
+.match-button.yes:hover {
     background: #218838;
 }
 
-.dog-button.no {
+.match-button.no {
     background: #dc3545;
 }
 
-.dog-button.no:hover {
+.match-button.no:hover {
     background: #c82333;
 }
 
@@ -445,7 +445,7 @@ body {
 }
 
 .review-button, 
-.dog-button,
+.match-button,
 .tag-button,
 .delete-button,
 .download-button {
@@ -500,7 +500,7 @@ body {
     display: none;
 }
 
-.dog-button.disabled,
+.match-button.disabled,
 .delete-button.disabled,
 .review-button.disabled,
 .tag-button.disabled,
@@ -639,7 +639,7 @@ body {
 
     .mobile-video-modal .review-button,
     .mobile-video-modal .delete-button,
-    .mobile-video-modal .dog-button,
+    .mobile-video-modal .match-button,
     .mobile-video-modal .download-button,
     .mobile-video-modal .tag-button {
         height: 40px;
@@ -659,7 +659,7 @@ body {
         width: 100%;
     }
 
-    .mobile-video-modal .dog-button {
+    .mobile-video-modal .match-button {
         width: 100%;
     }
 
@@ -927,7 +927,7 @@ body {
         line-height: inherit !important;
     }
 
-    .mobile-video-modal .dog-button.disabled,
+    .mobile-video-modal .match-button.disabled,
     .mobile-video-modal .delete-button.disabled,
     .mobile-video-modal .review-button.disabled,
     .mobile-video-modal .tag-button.disabled,
