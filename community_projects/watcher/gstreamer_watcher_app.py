@@ -111,7 +111,7 @@ def DISPLAY_PIPELINE(video_sink='xvimagesink', sync='true', show_fps='false', na
     Returns:
         str: A string representing the GStreamer pipeline for displaying the video.
     """
-    screen_width, screen_height = min(get_screen_resolution(), (1024, 1024))
+    screen_width, screen_height = min(get_screen_resolution(), (1280, 720))
 
     # Construct the display pipeline string
     display_pipeline = (

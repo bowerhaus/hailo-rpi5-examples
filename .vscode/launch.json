@@ -35,6 +35,16 @@
             //"args": ["--use-frame", "--input", "test_data/pond_back1.mp4"]
         },
         {
+            "name": "Python: Run Bluebox",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/bluebox",
+            "program": "${workspaceFolder}/community_projects/watcher/bluebox/bluebox.py",
+            "console": "integratedTerminal",
+            "args": ["--use-frame", "--input", "rpi"]
+            //"args": ["--use-frame", "--input", "test_data/pond_back1.mp4"]
+        },
+        {
             "name": "Python: Run All Watcher Tests",
             "type": "debugpy",
             "request": "launch",

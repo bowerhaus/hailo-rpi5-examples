@@ -1,0 +1,10 @@
+{
+  "bower": {
+    "password": "aa87805328ac6b06119ba6706d8adff8b59470e25634d6f28be02934cd28600f",
+    "is_admin": true
+  },
+  "sally": {
+    "password": "eaff627551991bed9740b40a85259d8b15b894de428a29a469f811a8d6149565",
+    "is_admin": false
+  }
+}
