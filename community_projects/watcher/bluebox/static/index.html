@@ -105,6 +105,14 @@
         let availableDates = [];
         let isAdmin = false; // Add user admin status variable
         
+        // Add variables for auto-review functionality
+        let playbackTimeTracking = {
+            timeWatched: 0,              // Counter for seconds watched
+            autoReviewThreshold: 3,      // Seconds to auto-mark as reviewed
+            intervalId: null,            // Interval timer ID
+            videoHasBeenAutoReviewed: false  // Flag to prevent multiple auto-reviews
+        };
+        
         // Check user admin status on page load
         function checkAdminStatus() {
             // First try to get status from localStorage (set during login)
@@ -177,7 +185,7 @@
             panelDateElement.textContent = formattedDate;
         }
 
-        // New helper to refresh available dates from the server
+        // Helper to refresh available dates from the server
         async function refreshAvailableDates() {
             try {
                 const response = await fetch('/api/dates');
@@ -226,7 +234,7 @@
 
         let isResizing = false;
         let lastDownX = 0;
-        let currentWidth = 350; // Updated initial width to 350px to match CSS
+        let currentWidth = 350; // Initial width to match CSS
 
         // Splitter functionality
         const splitter = document.getElementById('splitter');
@@ -305,7 +313,7 @@
         listPanel.style.flex = splitRatio;
         jsonPanel.style.flex = 1 - splitRatio;
 
-        // Rest of the existing JavaScript for image cycling
+        // Variables for image cycling and state management
         let currentImages = [];
         let currentIndex = 0;
         let imageInterval = null;
@@ -313,17 +321,20 @@
         let currentJson = null;  // Store current JSON data
         let lastMetaDataTime = null;
 
-        // Add variables for tracking tap/click events
+        // Variables for tracking tap/click events
         let lastTapTime = 0;
         let lastTapItem = null;
         const doubleTapDelay = 300; // ms
 
-        // Modified to handle single tap and double tap differently on mobile
+        // Function to select an event from the list
         function selectEvent(filename, element) {
             selectedItem = filename;
             document.querySelectorAll('.event-item').forEach(item => 
                 item.classList.remove('selected'));
             element.classList.add('selected');
+            
+            // Reset auto-review tracking for new selection
+            resetPlaybackTracking();
             
             // Load and display JSON content
             fetch(`/media/${filename}`)
@@ -353,7 +364,59 @@
             // On mobile, do nothing here - video will be loaded on double tap
         }
 
-        // New function to load video player
+        // Reset playback tracking when changing videos
+        function resetPlaybackTracking() {
+            if (playbackTimeTracking.intervalId) {
+                clearInterval(playbackTimeTracking.intervalId);
+                playbackTimeTracking.intervalId = null;
+            }
+            playbackTimeTracking.timeWatched = 0;
+            playbackTimeTracking.videoHasBeenAutoReviewed = false;
+        }
+
+        // Function to setup video time tracking for auto-review
+        function setupVideoTimeTracking(player) {
+            resetPlaybackTracking();
+            
+            // Setup event listeners for tracking playback
+            player.on('play', function() {
+                if (!playbackTimeTracking.intervalId) {
+                    // Start tracking playback time
+                    playbackTimeTracking.intervalId = setInterval(() => {
+                        if (currentJson && !currentJson.reviewed && !playbackTimeTracking.videoHasBeenAutoReviewed) {
+                            playbackTimeTracking.timeWatched++;
+                            
+                            // Auto-review after threshold is reached
+                            if (playbackTimeTracking.timeWatched >= playbackTimeTracking.autoReviewThreshold) {
+                                playbackTimeTracking.videoHasBeenAutoReviewed = true;
+                                toggleReviewState(true); // true means auto-reviewed
+                                console.log('Auto-reviewed after 3 seconds of playback');
+                                clearInterval(playbackTimeTracking.intervalId);
+                                playbackTimeTracking.intervalId = null;
+                            }
+                        }
+                    }, 1000); // Check every second
+                }
+            });
+            
+            // Clear interval when video is paused
+            player.on('pause', function() {
+                if (playbackTimeTracking.intervalId) {
+                    clearInterval(playbackTimeTracking.intervalId);
+                    playbackTimeTracking.intervalId = null;
+                }
+            });
+            
+            // Clear interval when video ends
+            player.on('ended', function() {
+                if (playbackTimeTracking.intervalId) {
+                    clearInterval(playbackTimeTracking.intervalId);
+                    playbackTimeTracking.intervalId = null;
+                }
+            });
+        }
+
+        // Function to load video player
         function loadVideoPlayer(filename) {
             const baseFilename = filename.replace('.json', '');
             const videoFilename = `/media/${baseFilename}.mp4`;
@@ -369,6 +432,9 @@
                     type: 'video/mp4'
                 });
                 mobileVideoPlayer.load();
+                
+                // Setup tracking for auto-review
+                setupVideoTimeTracking(mobileVideoPlayer);
                 
                 // Setup handlers for fullscreen behavior
                 mobileVideoPlayer.on('play', function() {
@@ -400,6 +466,9 @@
                 });
                 videoPlayer.load();
 
+                // Setup tracking for auto-review
+                setupVideoTimeTracking(videoPlayer);
+
                 // Check if video can play
                 videoPlayer.on('canplay', function() {
                     videoPlayer.play();
@@ -412,7 +481,7 @@
             }
         }
 
-        // New handler for list item clicks to support double tap
+        // Handler for list item clicks to support double tap
         function handleListItemClick(file, item, e) {
             e.stopPropagation();
             
@@ -552,11 +621,14 @@
                 });
         }
 
-        // Updated clearSelection to stop, remove event listeners, clear source, and remove video content
+        // Clear selection and reset state
         function clearSelection() {
             selectedItem = null;
             currentJson = null;
             document.querySelectorAll('.event-item').forEach(item => item.classList.remove('selected'));
+
+            // Reset playback tracking
+            resetPlaybackTracking();
 
             // Clear JSON viewer
             document.getElementById('jsonViewer').innerHTML = '';
@@ -604,13 +676,14 @@
             viewer.innerHTML = `{\n${formatJsonObject(json, 2)}\n}`;
         }
 
-        // Add this function to close the mobile modal
+        // Function to close the mobile modal
         function closeMobileModal() {
             const modal = document.getElementById('mobileVideoModal');
             modal.classList.remove('active');
             const mobileVideoPlayer = videojs('mobileVideoPlayer');
             mobileVideoPlayer.pause();
             mobileVideoPlayer.reset();
+            resetPlaybackTracking(); // Reset tracking when closing
         }
 
         function showCurrentImage() {
@@ -637,12 +710,15 @@
             }
         }
 
-        // Modified to close mobile modal after update
-        function toggleReviewState() {
+        // Toggle review state function with support for auto-review
+        function toggleReviewState(autoReviewed = false) {
             if (!selectedItem || !currentJson) return;
 
-            // Toggle the reviewed state
-            currentJson.reviewed = !currentJson.reviewed;
+            // If already reviewed and this is an auto-review, don't do anything
+            if (currentJson.reviewed && autoReviewed) return;
+
+            // Toggle the reviewed state or set to true if auto-reviewed
+            currentJson.reviewed = autoReviewed ? true : !currentJson.reviewed;
 
             // If marking as reviewed and no label exists, set to null
             if (currentJson.reviewed && !currentJson.label) {
@@ -671,15 +747,15 @@
             .then(response => {
                 if (!response.ok) throw new Error('Failed to update');
                 console.log('Review state updated successfully');
-                // Close mobile modal after successful update
-                if (window.innerWidth < 768) {
+                // Close mobile modal after successful update if not auto-reviewed
+                if (window.innerWidth < 768 && !autoReviewed) {
                     closeMobileModal();
                 }
             })
             .catch(error => console.error('Error updating review state:', error));
         }
 
-        // Modified to close mobile modal after update
+        // Set match label function
         function setMatchLabel(label) {
             if (!selectedItem || !currentJson) return;
 
@@ -716,7 +792,7 @@
             .catch(error => console.error('Error updating match label:', error));
         }
 
-        // Modified to update all tag buttons
+        // Toggle tagged state
         function toggleTagged() {
             if (!selectedItem || !currentJson) return;
 
@@ -774,7 +850,7 @@
             .catch(error => console.error('Error updating tag state:', error));
         }
 
-        // Modified to close mobile modal after deletion
+        // Delete current entry
         function deleteCurrentEntry() {
             if (!selectedItem) return;
 
@@ -817,7 +893,7 @@
         }
 
         // Update temperature every 60 seconds
-        setInterval(updateTemperature, 60000);  // Changed from 5000 to 60000 ms
+        setInterval(updateTemperature, 60000);
         // Initial temperature update
         updateTemperature();
 
@@ -849,7 +925,7 @@
 
         initialize();
 
-        // Add logout functionality
+        // Logout functionality
         function handleLogout() {
             // Clear local storage
             localStorage.clear();
