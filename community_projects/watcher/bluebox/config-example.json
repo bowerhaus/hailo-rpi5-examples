@@ -6,6 +6,7 @@
     "SAVE_DETECTION_IMAGES": true,
     "SAVE_DETECTION_VIDEO": true,
     "SHOW_DETECTION_BOXES": false,
+    "VIDEO_MAX_SECONDS": 60,
     "FRAME_RATE": 30,
     "DAYTIME_ONLY": true,
     "USE_SSL": true

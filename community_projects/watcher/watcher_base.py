@@ -54,6 +54,10 @@ class WatcherBase(app_callback_class):
         
         # Add field for HEF model name
         self.hef_model = "unknown"
+        
+        # Initialize mask-related variables
+        self.mask = None
+        self.load_mask()
 
         self.create_speech_files()
         
@@ -105,6 +109,74 @@ class WatcherBase(app_callback_class):
     def create_speech_files(self):
         tts = gtts.gTTS(f"Its a {self.class_to_track.upper()}")
         tts.save(CLASS_ALERT)
+
+    def load_mask(self):
+        mask_file = f"{self.class_to_track}_mask.png"
+        if os.path.exists(mask_file):
+            mask_img = cv2.imread(mask_file, cv2.IMREAD_UNCHANGED)
+            
+            if mask_img is None:
+                self.logger.error(f"Failed to load mask file: {mask_file}")
+                return
+            
+            if mask_img.shape[2] == 4:  # BGRA image with alpha channel
+                # Extract pixels where B=255 and R=255, ignoring G value
+                # For transparent/semi-transparent images, consider any non-zero alpha
+                magenta_mask = np.logical_and(
+                    mask_img[:,:,0] == 255,  # B=255 (exact match)
+                    mask_img[:,:,2] == 255   # R=255 (exact match)
+                )
+                alpha_mask = mask_img[:,:,3] > 0  # Any non-zero alpha
+                self.mask = np.logical_and(magenta_mask, alpha_mask).astype(np.uint8) * 255
+            else:  # BGR without alpha
+                self.mask = np.logical_and(
+                    mask_img[:,:,0] == 255,  # B=255
+                    mask_img[:,:,2] == 255   # R=255
+                ).astype(np.uint8) * 255
+            
+            # Log information about the mask
+            if self.mask is not None:
+                mask_area = np.count_nonzero(self.mask)
+                mask_percentage = (mask_area / (self.mask.shape[0] * self.mask.shape[1])) * 100
+                self.logger.info(f"Loaded mask for {self.class_to_track}: {mask_area} pixels ({mask_percentage:.1f}% of image)")
+            else:
+                self.logger.warning(f"Failed to extract mask from {mask_file}")
+        else:
+            self.logger.warning(f"Mask file not found: {mask_file}. Masking will be disabled.")
+
+    def is_within_mask(self, centroid):
+        """Check if a centroid is within the masked area.
+        
+        Args:
+            centroid (Point2D): The centroid point to check.
+            
+        Returns:
+            bool: True if the point is within the mask or if no mask is in use,
+                 False otherwise.
+        """
+        if self.mask is None:
+            return True
+        
+        if centroid is None:
+            return False
+        
+        try:
+            # Get mask dimensions
+            mask_height, mask_width = self.mask.shape
+            
+            # Convert normalized centroid coordinates to image coordinates
+            x = int(centroid.x * mask_width)
+            y = int(centroid.y * mask_height)
+            
+            # Ensure coordinates are within bounds
+            x = max(0, min(x, mask_width - 1))
+            y = max(0, min(y, mask_height - 1))
+            
+            # Check if the point is within the masked area (value > 0)
+            return bool(self.mask[y, x] > 0)
+        except Exception as e:
+            self.logger.error(f"Error in is_within_mask: {str(e)}")
+            return True  # Default to allowing tracking on error
 
     def on_eos(self):
         """Handle end of stream."""
@@ -372,71 +444,65 @@ class WatcherBase(app_callback_class):
 
 
 def watcher_base_callback(pad, info, user_data):
-    """
-    Generic callback function for processing video frames and detecting objects.
-    Args:
-        pad (Gst.Pad): The pad from which the buffer is received.
-        info (Gst.PadProbeInfo): The probe info containing the buffer.
-        user_data (WatcherBase): Custom user data object for tracking state and configurations.
-    Returns:
-        Gst.PadProbeReturn: Indicates the result of the pad probe.
-    """
-    # Get the GstBuffer from the probe info
     buffer = info.get_buffer()
-    # Check if the buffer is valid
     if buffer is None:
         return Gst.PadProbeReturn.OK
     
-    # Using the user_data to count the number of frames
     user_data.increment()
     
-    # Get the caps from the pad
     user_data.format, user_data.width, user_data.height = get_caps_from_pad(pad)
     
-    # If the user_data.use_frame is set to True, we can get the video frame from the buffer
     if user_data.use_frame and user_data.format is not None and user_data.width is not None and user_data.height is not None:
         user_data.current_frame = get_numpy_from_buffer(buffer, user_data.format, user_data.width, user_data.height)
         user_data.current_frame = cv2.cvtColor(user_data.current_frame, cv2.COLOR_RGB2BGR)
     
-    # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
     
-    # Store all detections for subclasses to use
     user_data.all_detections = detections
 
-    # Filter detections that match class_to_track and have confidence greater than class_match_confidence
     class_detections = [
         detection for detection in detections 
         if (detection.get_label() == user_data.class_to_track) 
         and detection.get_confidence() > user_data.class_match_confidence
     ]
 
-    # Count the number of detections that match class_to_track
     detection_instance_count = len(class_detections)
     object_detected = False
+    
     if detection_instance_count > 0:
-        object_detected = True
-        user_data.detection_frame = user_data.current_frame
+        # Calculate the average centroid for tracking purposes
         user_data.object_centroid = user_data.get_avg_centroid(class_detections)
+        
+        # Check if ANY object's centroid is within the masked area
+        object_in_mask = False
+        for detection in class_detections:
+            bbox = detection.get_bbox()
+            centroid_x = (bbox.xmin() + bbox.xmax()) / 2
+            centroid_y = (bbox.ymin() + bbox.ymax()) / 2
+            individual_centroid = Point2D(centroid_x, centroid_y)
+            
+            if user_data.is_within_mask(individual_centroid):
+                object_in_mask = True
+                break
+        
+        if object_in_mask:
+            object_detected = True
+            user_data.detection_frame = user_data.current_frame
 
-    # Debouncing logic to start/stop active tracking
     if object_detected:
         user_data.detection_counter += 1
         user_data.no_detection_counter = 0
         
-        # Only activate after class_detected_count consecutive frames with detections
         if user_data.detection_counter >= user_data.class_detected_count and not user_data.is_active_tracking:
             user_data.start_active_tracking(class_detections)
     else:
         user_data.no_detection_counter += 1
         user_data.detection_counter = 0
         
-        # Only deactivate after class_gone_seconds without detections
         if user_data.no_detection_counter >= (user_data.class_gone_seconds * user_data.frame_rate) and user_data.is_active_tracking:
             user_data.stop_active_tracking()
 
-    # Active tracking
     if user_data.is_active_tracking:
         user_data.active_tracking(class_detections)
 
