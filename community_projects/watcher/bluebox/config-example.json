@@ -9,5 +9,14 @@
     "VIDEO_MAX_SECONDS": 60,
     "FRAME_RATE": 30,
     "DAYTIME_ONLY": true,
-    "USE_SSL": true
+    "USE_SSL": true,
+
+    "PUSHSAFER_ENABLED": true,
+    "PUSHSAFER_PRIVATE_KEY": "your_private_key",
+    "PUSHSAFER_DEVICE": "a,1,2,3",
+    "PUSHSAFER_COOLDOWN_SECONDS": 300,
+
+    "TRUCK_MIN_AREA_PERCENTAGE" : 20,
+    "TRUCK_MOVEMENT_THRESHOLD" : 0.025,
+    "TRUCK_DETECTION_FRAMES" : 4
 }

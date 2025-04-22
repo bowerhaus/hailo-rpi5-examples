@@ -427,6 +427,9 @@ class WatcherBase(app_callback_class):
         self.detection_counts.clear()
         self.max_mean_detection_count = 0
 
+    def monitor_secondary_tracking(self, detections):
+        """Look for secondary tracked objects."""
+
     def get_avg_centroid(self, class_detections):
         """Calculate the average centroid of a list of class detections."""
         centroids = []
@@ -505,5 +508,7 @@ def watcher_base_callback(pad, info, user_data):
 
     if user_data.is_active_tracking:
         user_data.active_tracking(class_detections)
+
+    user_data.monitor_secondary_tracking(detections)
 
     return Gst.PadProbeReturn.OK
