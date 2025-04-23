@@ -71,6 +71,24 @@
             "args": ["--app-type", "pigeonator"]
         },
         {
+            "name": "Python: Run Peetronic Tests Only",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "peetronic"]
+        },
+        {
+            "name": "Python: Run Bluebox Tests Only",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "bluebox"]
+        },
+        {
             "name": "Python: Run Test Runner (Interactive)",
             "type": "debugpy",
             "request": "launch",
@@ -96,6 +114,36 @@
             "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
             "console": "integratedTerminal",
             "args": ["--app-type", "pigeonator", "--interactive"]
+        },
+        {
+            "name": "Python: Run Peetronic Tests (Interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "peetronic", "--interactive"]
+        },
+        {
+            "name": "Python: Run Bluebox Tests (Interactive)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "console": "integratedTerminal",
+            "args": ["--app-type", "bluebox", "--interactive"]
+        },
+        {
+            "name": "List All Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/community_projects/watcher/testing/test_runner.py",
+            "args": [
+                "--list"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}/community_projects/watcher/testing"
         }
     ]
 }

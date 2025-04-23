@@ -29,7 +29,7 @@ class TestCase:
     """
     name: str
     input_file: str
-    app_type: str  # 'helen-o-matic' or 'pigeonator'
+    app_type: str  # 'helen-o-matic', 'pigeonator', 'peetronic', or 'bluebox'
     hef_path: Optional[str] = None
     labels_json: Optional[str] = None
     config_file: Optional[str] = None
@@ -101,7 +101,7 @@ class TestRunner:
         Filter test cases by app type or test name.
         
         Args:
-            app_type (str, optional): The app type to filter by ('helen-o-matic' or 'pigeonator').
+            app_type (str, optional): The app type to filter by ('helen-o-matic', 'pigeonator', 'peetronic', or 'bluebox').
             test_name (str, optional): The specific test name to run.
             
         Returns:
@@ -215,15 +215,21 @@ class TestRunner:
             output_dir = os.path.join(test_output_dir, "output", today)
             os.makedirs(output_dir, exist_ok=True)
             
-            # Prepare the command - use relative paths since we'll change directory
+            # Prepare the command - only include parameters if they are not None
             cmd = [
                 "python",
                 os.path.basename(app_script),
                 "--input", os.path.abspath(test_case.input_file),  # Ensure this is absolute
-                "--hef-path", os.path.abspath(test_case.hef_path),
-                "--labels-json", os.path.abspath(test_case.labels_json),
                 "--use-frame"
             ]
+
+            # Only add HEF path if it's provided
+            if test_case.hef_path:
+                cmd.extend(["--hef-path", os.path.abspath(test_case.hef_path)])
+                
+            # Only add labels JSON if it's provided
+            if test_case.labels_json:
+                cmd.extend(["--labels-json", os.path.abspath(test_case.labels_json)])
             
             # Run the app as a subprocess
             logger.info(f"Executing command in {app_dir}: {' '.join(cmd)}")
@@ -365,6 +371,16 @@ class TestRunner:
                 os.path.dirname(os.path.dirname(__file__)),
                 "pigeonator"
             )
+        elif app_type == "peetronic":
+            return os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "peetronic"
+            )
+        elif app_type == "bluebox":
+            return os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "bluebox"
+            )
         else:
             raise ValueError(f"Unknown app type: {app_type}")
     
@@ -413,6 +429,18 @@ class TestRunner:
                 "pigeonator",
                 "pigeonator.py"
             )
+        elif app_type == "peetronic":
+            return os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "peetronic",
+                "peetronic.py"
+            )
+        elif app_type == "bluebox":
+            return os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "bluebox",
+                "bluebox.py"
+            )
         else:
             raise ValueError(f"Unknown app type: {app_type}")
     
@@ -439,7 +467,7 @@ class TestRunner:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for watcher applications")
     parser.add_argument("--config", default="test_config.py", help="Test configuration file")
-    parser.add_argument("--app-type", choices=["helen-o-matic", "pigeonator"], 
+    parser.add_argument("--app-type", choices=["helen-o-matic", "pigeonator", "peetronic", "bluebox"], 
                         help="Filter tests by application type")
     parser.add_argument("--test-name", help="Run a specific test by name")
     parser.add_argument("--list", action="store_true", help="List available tests without running them")
