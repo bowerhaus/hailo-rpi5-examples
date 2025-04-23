@@ -7,6 +7,7 @@ input/
 logs/
 models/*.hef
 !models/pigeonator-mk3-b.v4.yolov8.hef
+!models/pigeonator-mk3-b.v4.yolov8p.hef
 !models/pigeonator-mk3-b.v3i.yolov8.hef
 
 # Temporary files   
