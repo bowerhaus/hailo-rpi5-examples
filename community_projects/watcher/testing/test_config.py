@@ -181,7 +181,7 @@ TEST_CASES = [
         },
         custom_validation=validate_pigeon_deterrent
     ),
-        TestCase(
+    TestCase(
         name="pigeon_outside_mask_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "pigeon_outside_mask.mp4")),
         app_type="pigeonator",
@@ -247,6 +247,12 @@ TEST_CASES = [
             "event_seconds": {"gt": 5},
             "video_truncated": False
         }
+    ),
+    TestCase(
+        name="rosie_outside_masked_area_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_outside_masked_area.mp4")),
+        app_type="peetronic",
+        expect_metadata=False
     ),
     
     # Bluebox test cases
