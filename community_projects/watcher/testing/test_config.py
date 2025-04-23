@@ -168,6 +168,12 @@ TEST_CASES = [
         },
         custom_validation=validate_pigeon_deterrent
     ),
+        TestCase(
+        name="pigeon_outside_mask_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "pigeon_outside_mask.mp4")),
+        app_type="pigeonator",
+        expect_metadata=False
+    ),
     TestCase(
         name="poor_lighting1_test",
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "poor_lighting1.mp4")),
