@@ -45,6 +45,8 @@ if __name__ == "__main__":
         os.system("pkill -f Hailo")
         os.system("pkill -f helen_o_matic.py")
         os.system("pkill -f pigeonator.py")
+        os.system("pkill -f peetronic.py")
+        os.system("pkill -f bluebox.py")
         
         # Run the test
         runner = TestRunner([test_case])

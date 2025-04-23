@@ -11,10 +11,16 @@ HELEN_HEF = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v7.
 HELEN_LABELS = os.path.join(BASE_DIR, "helen-o-matic", "models", "helen-o-matic.v5-labels.json")
 PIGEON_HEF = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v4.yolov8p.hef")
 PIGEON_LABELS = os.path.join(BASE_DIR, "pigeonator", "models", "pigeonator-mk3-b.v3-labels.json")
+PEETRONIC_HEF = os.path.join(BASE_DIR, "peetronic", "models", "peetronic.v1.yolov8p.hef")
+PEETRONIC_LABELS = os.path.join(BASE_DIR, "peetronic", "models", "peetronic.v1-labels.json")
+BLUEBOX_HEF = os.path.join(BASE_DIR, "bluebox", "models", "bluebox.v1.yolov8p.hef")
+BLUEBOX_LABELS = os.path.join(BASE_DIR, "bluebox", "models", "bluebox.v1-labels.json")
 
 # App test config files - moved to test_data directory
 HELEN_CONFIG = os.path.join(TEST_DATA_DIR, "helen_config.json")
 PIGEON_CONFIG = os.path.join(TEST_DATA_DIR, "pigeon_config.json")
+PEETRONIC_CONFIG = os.path.join(TEST_DATA_DIR, "peetronic_config.json")
+BLUEBOX_CONFIG = os.path.join(TEST_DATA_DIR, "bluebox_config.json")
 
 # Define default configurations for each app type
 APP_DEFAULTS = {
@@ -27,6 +33,12 @@ APP_DEFAULTS = {
         "hef_path": PIGEON_HEF,
         "labels_json": PIGEON_LABELS,
         "config_file": PIGEON_CONFIG
+    },
+    "peetronic": {
+        "config_file": PEETRONIC_CONFIG
+    },
+    "bluebox": {
+        "config_file": BLUEBOX_CONFIG
     }
 }
 
@@ -52,6 +64,7 @@ def validate_pigeon_deterrent(metadata):
         if event_seconds < 5:
             errors.append(f"Pigeon event too short: {event_seconds} seconds")
     return errors
+
 
 # Define test cases
 TEST_CASES = [
@@ -220,5 +233,35 @@ TEST_CASES = [
         input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally3.mp4")),
         app_type="pigeonator",
         expect_metadata=False
+    ),
+    
+    # Peetronic test cases
+    TestCase(
+        name="rosie_detection_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_detection.mp4")),
+        app_type="peetronic",
+        expected_metadata={
+            "class": "dog",
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "event_seconds": {"gt": 5},
+            "video_truncated": False
+        }
+    ),
+    
+    # Bluebox test cases
+    TestCase(
+        name="moving_truck_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "moving_truck.mp4")),
+        app_type="bluebox",
+        expected_metadata={
+            "class": "truck",
+            "movement_percent": {"gt": 10},
+            "area_percentage": {"gt": 15},
+            "video_truncated": False,
+            "video_duration": {"gt": 4.5},
+            "pushsafer_sent": True
+        }
     )
+
 ]
