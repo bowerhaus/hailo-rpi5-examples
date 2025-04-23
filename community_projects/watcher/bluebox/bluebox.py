@@ -46,8 +46,12 @@ class BlueboxWatcher(WatcherBase):
         self.truck_detection_counter = 0
         self.truck_previous_centroid = None
         self.truck_current_centroid = None
-        self.truck_movement_threshold = config.get('TRUCK_MOVEMENT_THRESHOLD', 0.025)  # Minimum movement to consider a truck as moving
-        self.truck_detection_threshold = config.get('TRUCK_DETECTION_FRAMES', 3)    # Number of frames before considering a detection valid
+        self.truck_initial_centroid = None
+        
+        # Use only percentage-based threshold for movement detection
+        self.truck_movement_threshold_percent = config.get('TRUCK_MOVEMENT_THRESHOLD_PERCENT', 20)  # % of truck width
+        
+        self.truck_detection_threshold = config.get('TRUCK_DETECTION_FRAMES', 3)
         self.truck_is_moving = False
         self.truck_alert_cooldown = 10 * self.frame_rate  # 10 seconds cooldown between alerts
         self.truck_alert_counter = 0
@@ -295,6 +299,7 @@ class BlueboxWatcher(WatcherBase):
             self.truck_previous_centroid = self.truck_current_centroid
             self.truck_current_centroid = None
             self.truck_is_moving = False
+            self.truck_initial_centroid = None  # Reset initial centroid when no trucks are detected
             return
         
         # Find the largest truck detection
@@ -314,28 +319,46 @@ class BlueboxWatcher(WatcherBase):
         if largest_truck and largest_area_percentage >= self.truck_min_area_percentage:
             self.truck_detection_counter += 1
             
-            # Calculate truck centroid
+            # Calculate truck centroid and dimensions
             bbox = largest_truck.get_bbox()
             centroid_x = (bbox.xmin() + bbox.xmax()) / 2
             centroid_y = (bbox.ymin() + bbox.ymax()) / 2
             self.truck_current_centroid = Point2D(centroid_x, centroid_y)
             
-            # Check for movement if we have previous position
-            if self.truck_previous_centroid and self.truck_detection_counter >= self.truck_detection_threshold:
-                movement = self.truck_current_centroid.subtract(self.truck_previous_centroid)
-                movement_magnitude = (movement.x ** 2 + movement.y ** 2) ** 0.5
+            # Calculate truck width (normalized coordinates)
+            truck_width = bbox.xmax() - bbox.xmin()
+            
+            # Save initial centroid if this is the first detection
+            if self.truck_initial_centroid is None:
+                self.truck_initial_centroid = self.truck_current_centroid
+                self.logger.debug(f"Initial truck centroid set to {self.truck_initial_centroid}")
+            
+            # Check for movement from initial position if we have an initial position
+            if self.truck_initial_centroid and self.truck_detection_counter >= self.truck_detection_threshold:
+                # Calculate movement from initial position instead of previous frame
+                movement = self.truck_current_centroid.subtract(self.truck_initial_centroid)
                 
+                # Use only horizontal movement (x-axis)
+                movement_magnitude = abs(movement.x)
+                
+                # Calculate the movement threshold based on truck width
+                dynamic_threshold = truck_width * (self.truck_movement_threshold_percent / 100.0)
+                    
                 # If movement exceeds threshold, consider truck as moving
-                if movement_magnitude > self.truck_movement_threshold:
+                if movement_magnitude > dynamic_threshold:
                     self.truck_is_moving = True
                     
                     # Only alert if cooldown has elapsed
                     if self.truck_alert_counter == 0:
                         confidence = largest_truck.get_confidence()
+                        
+                        # Calculate movement as percentage of truck width for logging
+                        movement_percent = (movement_magnitude / truck_width * 100) if truck_width > 0 else 0
+                        
                         self.logger.warning(
                             f"ALERT: Large moving TRUCK detected! "
                             f"Area: {largest_area_percentage:.1f}%, "
-                            f"Movement: {movement_magnitude:.4f}, "
+                            f"Horizontal Movement: {movement_magnitude:.4f} ({movement_percent:.1f}% of truck width), "
                             f"Confidence: {confidence:.2f}"
                         )
                         self.truck_alert_counter = self.truck_alert_cooldown
@@ -351,19 +374,21 @@ class BlueboxWatcher(WatcherBase):
                             push_title = "Truck Movement Detected"
                             push_message = (
                                 f"Large moving truck detected at {readable_time}.\n"
-                                f"Area: {largest_area_percentage:.1f}%, Movement: {movement_magnitude:.4f}"
+                                f"Area: {largest_area_percentage:.1f}%, Movement: {movement_percent:.1f}% of truck width"
                             )
                             threading.Thread(
                                 target=self.send_pushsafer_notification,
-                                args=(push_title, push_message),  # Icon 18=truck, Sound 2=alarm
+                                args=(push_title, push_message),
                                 daemon=True
                             ).start()
                         
                         # Store all event data that will be needed for metadata
                         self.truck_event_data = {
                             "confidence": round(confidence, 2),
-                            "area_percentage": round(largest_area_percentage, 1),  # Already in percentage
+                            "area_percentage": round(largest_area_percentage, 1),
                             "movement_magnitude": round(movement_magnitude, 4),
+                            "movement_percent": round(movement_percent, 1),
+                            "truck_width": round(truck_width, 4),
                             "detection_time": datetime.datetime.now().isoformat(),
                             "pushsafer_sent": self.pushsafer_enabled
                         }
@@ -413,6 +438,7 @@ class BlueboxWatcher(WatcherBase):
             # Reset detection counter if truck is too small
             self.truck_detection_counter = 0
             self.truck_is_moving = False
+            self.truck_initial_centroid = None  # Reset initial centroid if truck is too small
         
         # Decrement counters if active
         if self.truck_alert_counter > 0:
