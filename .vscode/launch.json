@@ -144,6 +144,15 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "cwd": "${workspaceFolder}/community_projects/watcher/testing"
+        },
+        {
+            "name": "Python: Prepsort",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/tools",
+            "program": "${workspaceFolder}/community_projects/watcher/tools/prepsort.py",
+            "console": "integratedTerminal",
+            "args": ["--input", "input/peetronic", "--output", "output/peetronic", "--config", "prepsort-peetronic.json"]
         }
     ]
 }
