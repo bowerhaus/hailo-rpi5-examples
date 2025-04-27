@@ -31,7 +31,7 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/peetronic",
             "program": "${workspaceFolder}/community_projects/watcher/peetronic/peetronic.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--input", "rpi"]
+            "args": ["--use-frame", "--hef-path", "models/peetronic.v1.yolov8p.hef", "--labels-json", "models/peetronic.v1-labels.json", "--input", "rpi"]
             //"args": ["--use-frame", "--input", "test_data/pond_back1.mp4"]
         },
         {

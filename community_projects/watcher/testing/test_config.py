@@ -35,6 +35,8 @@ APP_DEFAULTS = {
         "config_file": PIGEON_CONFIG
     },
     "peetronic": {
+        "hef_path": PEETRONIC_HEF,
+        "labels_json": PEETRONIC_LABELS,
         "config_file": PEETRONIC_CONFIG
     },
     "bluebox": {
@@ -237,16 +239,10 @@ TEST_CASES = [
     
     # Peetronic test cases
     TestCase(
-        name="rosie_detection_test",
-        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_detection.mp4")),
+        name="rosie_no_pee_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_no_pee.mp4")),
         app_type="peetronic",
-        expected_metadata={
-            "class": "dog",
-            "max_instances": {"eq": 1},
-            "average_instances": {"approx": 1},
-            "event_seconds": {"gt": 5},
-            "video_truncated": False
-        }
+        expect_metadata=False
     ),
     TestCase(
         name="rosie_outside_masked_area_test",
@@ -254,7 +250,43 @@ TEST_CASES = [
         app_type="peetronic",
         expect_metadata=False
     ),
-    
+    TestCase(
+        name="rosie_pee1_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_pee1.mp4")),
+        app_type="peetronic",
+        expected_metadata={
+            "class": "rosie_pee",
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "event_seconds": {"gt": 2.5},
+            "video_truncated": False
+        }
+    ),
+    TestCase(
+        name="rosie_pee2_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_pee2.mp4")),
+        app_type="peetronic",
+        expected_metadata={
+            "class": "rosie_pee",
+            "max_instances": {"eq": 1},
+            "average_instances": {"approx": 1},
+            "event_seconds": {"gt": 2.5},
+            "video_truncated": False
+        }
+    ),
+    TestCase(
+        name="rosie_sally_and_clippy_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "rosie_sally_and_clippy.mp4")),
+        app_type="peetronic",
+        expect_metadata=False
+    ),
+    TestCase(
+        name="sally_false_positive_test",
+        input_file=os.path.abspath(os.path.join(TEST_DATA_DIR, "sally_false_positive.mp4")),
+        app_type="peetronic",
+        expect_metadata=False
+    ),
+
     # Bluebox test cases
     TestCase(
         name="moving_truck_test",
