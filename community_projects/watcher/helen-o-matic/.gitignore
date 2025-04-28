@@ -16,6 +16,7 @@ clock*.png
 
 # Model files
 models/*.hef
+!models/helen-o-matic.v7.yolov8p.hef
 
 # Config files
 config.json

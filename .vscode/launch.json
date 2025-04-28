@@ -31,7 +31,7 @@
             "cwd": "${workspaceFolder}/community_projects/watcher/peetronic",
             "program": "${workspaceFolder}/community_projects/watcher/peetronic/peetronic.py",
             "console": "integratedTerminal",
-            "args": ["--use-frame", "--input", "rpi"]
+            "args": ["--use-frame", "--hef-path", "models/peetronic.v1.yolov8p.hef", "--labels-json", "models/peetronic.v1-labels.json", "--input", "rpi"]
             //"args": ["--use-frame", "--input", "test_data/pond_back1.mp4"]
         },
         {
@@ -144,6 +144,15 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "cwd": "${workspaceFolder}/community_projects/watcher/testing"
+        },
+        {
+            "name": "Python: Prepsort",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/community_projects/watcher/tools",
+            "program": "${workspaceFolder}/community_projects/watcher/tools/prepsort.py",
+            "console": "integratedTerminal",
+            "args": ["--input", "input/peetronic", "--output", "output/peetronic", "--config", "prepsort-peetronic.json"]
         }
     ]
 }
