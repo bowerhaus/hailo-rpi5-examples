@@ -7,7 +7,7 @@
   "SAVE_DETECTION_VIDEO": true,
   "VIDEO_MAX_SECONDS": 15,
 
-  "WATERING_ON": false,
+  "WATERING_ON": true,
   "WATERING_DURATION_SEC": 20,
   "DETER_DELAY_SECONDS": 2,
   "DETER_RATE_LIMIT_SECONDS": 120,
@@ -15,9 +15,9 @@
   "DAYTIME_ONLY": false,
   "USE_SSL": false,
 
-  "LINKTAP_USERNAME": "your_linktap_username",
-  "LINKTAP_APIKEY": "your_linktap_apikey",
-  "LINKTAP_GATEWAYID": "your_gateway_id",
-  "LINKTAP_TAPLINKERID": "your_taplinker_id"
+  "LINKTAP_USERNAME": "Bowerandy",
+  "LINKTAP_APIKEY": "cfc23523c397e4d20a9c2aa06b37e8",
+  "LINKTAP_GATEWAYID": "7A327022004B1200",
+  "LINKTAP_TAPLINKERID": "3511C52F004B1200_2"
 }
 

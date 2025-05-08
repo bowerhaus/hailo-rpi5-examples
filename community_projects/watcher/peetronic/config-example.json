@@ -1,6 +1,6 @@
 {
-    "CLASS_TO_TRACK": "dog",
-    "CLASS_DETECTED_COUNT": 4,
+    "CLASS_TO_TRACK": "rose_pee",
+    "CLASS_DETECTED_COUNT": 6,
     "CLASS_GONE_SECONDS": 5,
     "CLASS_MATCH_CONFIDENCE": 0.8,
     "SAVE_DETECTION_IMAGES": true,
