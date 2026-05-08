@@ -89,3 +89,22 @@ Test cases are defined in `testing/test_config.py`; each plays an MP4 through th
 - **Two `hailo_rpi_common` modules exist** — the one inside `basic_pipelines/` and the one inside the `hailo_apps_infra` pip package. The Watcher apps import from `hailo_apps_infra.hailo_rpi_common`; only `basic_pipelines/watcher.py` imports the local copy. Match the existing import style of the file you're editing.
 - **App-specific `gstreamer_*_app.py`** files often re-define `SOURCE_PIPELINE` / `DISPLAY_PIPELINE` with the same name as the infra-package functions — this is intentional shadowing to add features (e.g. webcam MJPEG, screen capture). Don't rename.
 - **`config.json` is per-deployment.** When adding a new tunable, also add it to `config-example.json` with a sensible default and to the relevant README.
+
+## Per-deployment runtime patches (not committable)
+
+Some deployments need runtime tweaks to upstream code under `venv_hailo_rpi5_examples/lib/python3.11/site-packages/hailo_apps_infra/`. These **cannot** be committed because the file is wiped by `install.sh`, `pip install --upgrade hailo-apps-infra`, or any venv rebuild. Track them here so the patch can be re-applied after a venv reset.
+
+### Lawn Pigeonator: capture at 15 fps (thermal mitigation)
+
+**Why.** The lawn-deployed Pi 5 was running at ~77°C with the fan at max (4/4) because continuous YOLOv8s inference at 30 fps saturated the Active Cooler. Halving the camera capture rate drops the SoC to ~65°C with the fan at 2/4 while still detecting birds reliably. Inserting a `videorate max-rate=15` element after `appsrc` in our own `SOURCE_PIPELINE` was tried first and failed: `appsrc` returned `GST_FLOW_ERROR -5` and the pipeline crashed. The fix has to live inside `picamera_thread` itself, which is in upstream territory.
+
+**Three edits** to `venv_hailo_rpi5_examples/lib/python3.11/site-packages/hailo_apps_infra/gstreamer_app.py` (inside `picamera_thread`):
+1. `controls = {'FrameRate': 30}` → `15`
+2. `f"framerate=30/1, pixel-aspect-ratio=1/1"` → `framerate=15/1`
+3. `buffer_duration = Gst.util_uint64_scale_int(1, Gst.SECOND, 30)` → `15`
+
+All three matter — without (3) the buffer PTS won't match real capture cadence and downstream elements may drop frames. Without (2) the GStreamer caps disagree with actual rate and negotiation can fail.
+
+**Companion change in committed code:** the lawn Pi's `pigeonator/config.json` (gitignored) sets `FRAME_RATE: 15` so saved MP4 metadata matches the real capture rate. Without it, recordings play back at 2× speed.
+
+**Proper long-term fix.** Plumb a `picamera_config` argument from `GStreamerDetectionApp.__init__` through to `picamera_thread()` so Watcher apps can pass `controls = {'FrameRate': N}` from their config. That's an upstream PR against `hailo-apps-infra` and would let us commit `INFERENCE_FRAME_RATE` as a real config option.
