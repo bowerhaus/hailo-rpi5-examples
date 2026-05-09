@@ -20,6 +20,35 @@ from playsound import playsound
 
 CLASS_ALERT = "classalert.mp3"
 
+
+def _bbox_iou(a, b):
+    """IoU of two Hailo bbox objects (with xmin/ymin/xmax/ymax methods)."""
+    ix1 = max(a.xmin(), b.xmin())
+    iy1 = max(a.ymin(), b.ymin())
+    ix2 = min(a.xmax(), b.xmax())
+    iy2 = min(a.ymax(), b.ymax())
+    iw = max(0.0, ix2 - ix1)
+    ih = max(0.0, iy2 - iy1)
+    inter = iw * ih
+    a_area = (a.xmax() - a.xmin()) * (a.ymax() - a.ymin())
+    b_area = (b.xmax() - b.xmin()) * (b.ymax() - b.ymin())
+    union = a_area + b_area - inter
+    return inter / union if union > 0 else 0.0
+
+
+def _detection_to_dict(d):
+    """Convert a Hailo detection to a JSON-serializable dict for metadata."""
+    bbox = d.get_bbox()
+    return {
+        "label": d.get_label(),
+        "confidence": round(d.get_confidence(), 3),
+        "bbox": [
+            round(bbox.xmin(), 4), round(bbox.ymin(), 4),
+            round(bbox.xmax(), 4), round(bbox.ymax(), 4),
+        ],
+    }
+
+
 class WatcherBase(app_callback_class):
     def __init__(self, config):
         super().__init__()
@@ -31,6 +60,8 @@ class WatcherBase(app_callback_class):
         self.class_detected_count = config.get('CLASS_DETECTED_COUNT', 4)
         self.class_gone_seconds = config.get('CLASS_GONE_SECONDS', 3)
         self.class_match_confidence = config.get('CLASS_MATCH_CONFIDENCE', 0.4)
+        self.suppress_overlap_classes = config.get('SUPPRESS_OVERLAP_CLASSES') or []
+        self.suppress_overlap_iou = config.get('SUPPRESS_OVERLAP_IOU', 0.3)
         self.save_detection_images = config.get('SAVE_DETECTION_IMAGES', True)
         self.show_detection_boxes = config.get('SHOW_DETECTION_BOXES', True)
         self.save_detection_video = config.get('SAVE_DETECTION_VIDEO', True)
@@ -105,6 +136,8 @@ class WatcherBase(app_callback_class):
 
         # Add a field to store all detections for subclasses to use
         self.all_detections = []
+        # Snapshot of every model output at the moment tracking starts (for diagnostics).
+        self.trigger_all_detections = []
 
     def create_speech_files(self):
         tts = gtts.gTTS(f"Its a {self.class_to_track.upper()}")
@@ -265,6 +298,7 @@ class WatcherBase(app_callback_class):
         
         self.save_frame = self.current_frame
         self.active_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        self.trigger_all_detections = [_detection_to_dict(d) for d in self.all_detections]
 
         # Draw detection boxes on the frame if SHOW_DETECTION_BOXES is True
         if self.current_frame is not None and self.show_detection_boxes:
@@ -336,8 +370,9 @@ class WatcherBase(app_callback_class):
             "max_instances": self.max_instances,
             "average_instances": self.get_average_detection_instance_count(),
             "event_seconds": round(event_seconds, 1),  # Round to 1 decimal place
-            "video_truncated": self.video_truncated,  
-            "reviewed": False  # Add reviewed field, initially false
+            "video_truncated": self.video_truncated,
+            "reviewed": False,  # Add reviewed field, initially false
+            "all_detections_at_trigger": self.trigger_all_detections,
         }
         return metadata
     
@@ -464,9 +499,27 @@ def watcher_base_callback(pad, info, user_data):
     
     user_data.all_detections = detections
 
+    # Cross-class spatial suppression: drop tracked-class detections that overlap
+    # with a detection of any suppressor class (e.g. drop 'bird' boxes that
+    # overlap with 'dog' boxes, since YOLOv8s sometimes emits a spurious 'bird'
+    # on the same pixels as a correctly-detected 'dog').
+    if user_data.suppress_overlap_classes:
+        suppressors = [d for d in detections
+                       if d.get_label() in user_data.suppress_overlap_classes]
+        if suppressors:
+            target = user_data.class_to_track
+            iou_t = user_data.suppress_overlap_iou
+            detections = [
+                d for d in detections
+                if not (
+                    d.get_label() == target
+                    and any(_bbox_iou(d.get_bbox(), s.get_bbox()) >= iou_t for s in suppressors)
+                )
+            ]
+
     class_detections = [
-        detection for detection in detections 
-        if (detection.get_label() == user_data.class_to_track) 
+        detection for detection in detections
+        if (detection.get_label() == user_data.class_to_track)
         and detection.get_confidence() > user_data.class_match_confidence
     ]
 
