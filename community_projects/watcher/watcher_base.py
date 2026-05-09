@@ -60,6 +60,13 @@ class WatcherBase(app_callback_class):
         self.class_detected_count = config.get('CLASS_DETECTED_COUNT', 4)
         self.class_gone_seconds = config.get('CLASS_GONE_SECONDS', 3)
         self.class_match_confidence = config.get('CLASS_MATCH_CONFIDENCE', 0.4)
+        # Optional lower threshold used once active tracking has started, to keep
+        # an event alive across brief confidence dips (e.g. bird turning sideways).
+        # Falls back to CLASS_MATCH_CONFIDENCE when unset, preserving the symmetric
+        # default behaviour.
+        self.class_match_confidence_sustain = config.get(
+            'CLASS_MATCH_CONFIDENCE_SUSTAIN', self.class_match_confidence
+        )
         self.suppress_overlap_classes = config.get('SUPPRESS_OVERLAP_CLASSES') or []
         self.suppress_overlap_iou = config.get('SUPPRESS_OVERLAP_IOU', 0.3)
         self.save_detection_images = config.get('SAVE_DETECTION_IMAGES', True)
@@ -517,10 +524,15 @@ def watcher_base_callback(pad, info, user_data):
                 )
             ]
 
+    confidence_threshold = (
+        user_data.class_match_confidence_sustain
+        if user_data.is_active_tracking
+        else user_data.class_match_confidence
+    )
     class_detections = [
         detection for detection in detections
         if (detection.get_label() == user_data.class_to_track)
-        and detection.get_confidence() > user_data.class_match_confidence
+        and detection.get_confidence() > confidence_threshold
     ]
 
     detection_instance_count = len(class_detections)
