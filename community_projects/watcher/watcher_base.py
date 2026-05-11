@@ -88,6 +88,11 @@ class WatcherBase(app_callback_class):
         self.logger.info(f"Using output directory: {self.output_directory}")
         
         self.max_video_seconds = config.get('VIDEO_MAX_SECONDS', 30)
+        # Extra video time recorded after the event ends, to capture aftermath.
+        self.post_event_video_seconds = config.get('POST_EVENT_VIDEO_SECONDS', 0)
+        # Tail-state bookkeeping (post-event recording window).
+        self.is_in_tail = False
+        self.tail_start_time = None
         self.daytime_only = config.get('DAYTIME_ONLY', False)
         
         # Add field for HEF model name
@@ -390,11 +395,13 @@ class WatcherBase(app_callback_class):
 
     def stop_active_tracking(self, abort=False):
         """Stop tracking objects and save relevant data.
-        
+
         Args:
             abort (bool): If True, don't save metadata and delete any created files.
         """
         self.is_active_tracking = False
+        self.is_in_tail = False
+        self.tail_start_time = None
         self.end_centroid = self.object_centroid
         
         avg_detection_count = self.get_average_detection_instance_count()
@@ -506,6 +513,17 @@ def watcher_base_callback(pad, info, user_data):
     
     user_data.all_detections = detections
 
+    # Post-event tail: once an event has ended we keep the video writer rolling
+    # for POST_EVENT_VIDEO_SECONDS to capture aftermath. New detections during
+    # the tail are ignored (no restart, no tracking updates).
+    if user_data.is_in_tail:
+        tail_elapsed = (datetime.datetime.now() - user_data.tail_start_time).total_seconds()
+        if tail_elapsed >= user_data.post_event_video_seconds:
+            user_data.stop_active_tracking()
+        else:
+            user_data.active_tracking([])
+        return Gst.PadProbeReturn.OK
+
     # Cross-class spatial suppression: drop tracked-class detections that overlap
     # with a detection of any suppressor class (e.g. drop 'bird' boxes that
     # overlap with 'dog' boxes, since YOLOv8s sometimes emits a spurious 'bird'
@@ -569,7 +587,11 @@ def watcher_base_callback(pad, info, user_data):
         user_data.detection_counter = 0
         
         if user_data.no_detection_counter >= (user_data.class_gone_seconds * user_data.frame_rate) and user_data.is_active_tracking:
-            user_data.stop_active_tracking()
+            if user_data.post_event_video_seconds > 0:
+                user_data.is_in_tail = True
+                user_data.tail_start_time = datetime.datetime.now()
+            else:
+                user_data.stop_active_tracking()
 
     if user_data.is_active_tracking:
         user_data.active_tracking(class_detections)
