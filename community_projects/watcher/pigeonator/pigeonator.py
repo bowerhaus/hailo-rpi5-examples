@@ -54,9 +54,9 @@ class PigeonatorWatcher(WatcherBase):
             tracking_duration = (datetime.datetime.now() - self.tracking_start_time).total_seconds()
             
             # Check if the pigeon is still present in the current detections
-            if tracking_duration >= self.deter_delay_seconds and len(class_detections)>0:
-                self.deterrent_triggered = True
-                self.deterrent_manager.trigger_deterrent()
+            if tracking_duration >= self.deter_delay_seconds and len(class_detections) > 0:
+                if self.deterrent_manager.trigger_deterrent():
+                    self.deterrent_triggered = True
 
     def create_metadata(self, root_filename, event_seconds):
         """Override to add deterrent_triggered field to metadata"""

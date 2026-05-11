@@ -40,14 +40,25 @@ class DeterrentManager:
             return False
 
     def trigger_deterrent(self):
-        if self.watering_on:
-            now = datetime.datetime.now()
-            if self.last_deterrent_time is None or (now - self.last_deterrent_time).total_seconds() >= self.deter_rate_limit_seconds:
-                if not self.watering_triggered:
-                    # Create and start a new thread to run the LinkTap API call
-                    self.watering_triggered = True  # Prevent re-triggering
-                    self.last_deterrent_time = now
-                    threading.Thread(target=self._run_linktap_call, daemon=True).start()
+        """Attempt to fire the sprayer. Returns True if the LinkTap API call
+        was dispatched (passed all gates: watering_on, rate limit, not already
+        triggered this event); False if it was blocked. The actual API call
+        runs asynchronously in a daemon thread, so a True return means
+        "dispatched", not "API confirmed success" — see the per-event log line
+        from _run_linktap_call for that.
+        """
+        if not self.watering_on:
+            return False
+        now = datetime.datetime.now()
+        if self.last_deterrent_time is not None and \
+                (now - self.last_deterrent_time).total_seconds() < self.deter_rate_limit_seconds:
+            return False
+        if self.watering_triggered:
+            return False
+        self.watering_triggered = True  # Prevent re-triggering within this event
+        self.last_deterrent_time = now
+        threading.Thread(target=self._run_linktap_call, daemon=True).start()
+        return True
 
     def reset_deterrent_trigger(self):
         """Reset the watering triggered flag."""
